@@ -139,7 +139,7 @@ Mac, AddressSanitizer + UBSan; `../hosttests/test5/run.sh`. All passed:
   piece, said as a change of piece and inside the whole screen and packed as the FM-1's USB code packs SysEx, with
   notes, clock and CCs between the packets, names the right piece; resets, other messages, a name cut off, a name
   with more after it, a SysEx too long, one broken off by a status byte, another maker's and the editor's link are
-  ignored, and a good one straight after still works. 989 checks. Each of six deliberate breaks of `reader.c` (the
+  ignored, and a good one straight after still works. 989 checks. Each of five deliberate breaks of `reader.c` (the
   header, a name, the comma rule, the status-byte rule, the length limit) fails it.
 - **Test 4's own checks** run against test 5's lcd.c, cal.c, tone.c and land.c, with the title changed to test
   5: 116 + 6 passed, test 3's harness OK.
