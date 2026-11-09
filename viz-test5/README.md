@@ -93,6 +93,7 @@ In the log: `the FM-1 says it's on BLASKET` as it changes, and in the snapshot:
     screen reader: the FM-1 answered 11 hellos and said 4 things
 
 First load, 144 MHz: the FM-1 answered, and the highlight followed it from CAROLAN to BLASKET, no MIDI dropped.
+Stephen then turned PRESET on the FM-1 by hand: "it follows PRESET" (2026-11-09).
 
 ## Clock
 
