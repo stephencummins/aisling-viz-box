@@ -53,6 +53,35 @@ Stephen. Now the drawing is out of the way, so it may help; `s` again moves on t
 and 144 or 240 MHz would cut the step and the render in proportion. That's Stephen's call; this test doesn't
 change it.
 
+## Measured on the board (2026-11-09)
+
+The FM-1 playing; the tile count moves with the music, so compare per tile as well as per frame.
+
+| clock | screen SPI | frames a second | step | prepare | rest (waiting) | rendering | tiles a frame | SPI |
+|---|---|---|---|---|---|---|---|---|
+| 120 MHz | 20 MHz | 10 | 72 ms | 24 | 2 (1) | 38 | 374 | 76 ms |
+| 144 MHz | 18 MHz | 10 | 60 ms | 18 | 30 (20) | 35 | 414 | 94 ms |
+| 144 MHz | 24 MHz (`s`) | 10 | 67 ms | 22 | 2 (1) | 39 | 459 | 78 ms |
+
+Test 4 managed 5.2 at 120 MHz. With a fresh picture (about 150 tiles) it's 13 at 120 MHz and 19 at 144.
+
+At 120 MHz the processor is the limit. 144 MHz takes the work down by its sixth (rendering 85 µs a tile against
+102), but the SPI can't make 20 MHz from 144: it gets 18 (144 / 8), and then the screen is the limit and nothing is
+gained. `s` gives 24 (144 / 6) and the screen stops being the limit again: the last row is busier music (459 tiles
+against 374) at the same 10 a second.
+
+## Clock
+
+The system clock is a build option, `VIZ_SYS_MHZ`: 120 (the default, as tests 1–4) or 144. It has to be a
+multiple of 12 for PIO-USB, which works its own timing out from it, and the RP2350 is rated to 150. Built at 120,
+the uf2 is byte-identical to the one without the option.
+
+    cmake -S . -B build144 -G "Unix Makefiles" -Dpicotool_DIR=/opt/homebrew/lib/cmake/picotool -DVIZ_SYS_MHZ=144
+    make -C build144 -j8      # build144/viz_test5.uf2
+
+At 144 MHz the screen SPI starts at 18 MHz; `s` steps it 18 → 24 → 14.4. Nothing is stored, so a power cycle
+starts at 18 again.
+
 ## Build
 
     export PATH="$HOME/.pico/arm-gnu-toolchain-14.3.rel1-darwin-arm64-arm-none-eabi/bin:$PATH"

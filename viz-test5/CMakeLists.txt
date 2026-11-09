@@ -30,6 +30,9 @@ target_include_directories(viz_test5 PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_compile_options(viz_test5 PRIVATE -Wall -Wextra -Wno-unused-parameter -O2 -fno-math-errno)
 # hot.h: the functions run every frame go in RAM on the board (the host checks build the same files without this).
 target_compile_definitions(viz_test5 PRIVATE VIZ_BOARD=1)
+# The system clock in MHz: 120 (the default, as tests 1-4) or 144 (cmake ... -DVIZ_SYS_MHZ=144 -B build144).
+set(VIZ_SYS_MHZ 120 CACHE STRING "system clock, MHz: a multiple of 12, at most 150")
+target_compile_definitions(viz_test5 PRIVATE VIZ_SYS_MHZ=${VIZ_SYS_MHZ})
 
 target_link_libraries(viz_test5 PRIVATE
     pico_stdlib

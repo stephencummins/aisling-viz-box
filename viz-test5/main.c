@@ -786,11 +786,18 @@ static void keys(void) {
     }
 }
 
+// The system clock, set at build time (CMakeLists.txt, VIZ_SYS_MHZ): 120 by default, 144 to try. PIO-USB works its
+// timing out from it, but it has to be a multiple of 12 MHz; the RP2350 is rated to 150.
+#ifndef VIZ_SYS_MHZ
+#define VIZ_SYS_MHZ 120
+#endif
+_Static_assert(VIZ_SYS_MHZ % 12 == 0 && VIZ_SYS_MHZ <= 150, "the clock: a multiple of 12 MHz, within the rating");
+
 int main(void) {
-    // PIO-USB needs the system clock to be a multiple of 12 MHz. The SDK then leaves the peripherals on the 48 MHz
-    // USB clock; the screen's SPI runs from clk_peri, so give it the system clock: 120 MHz, and SPI up to 60.
-    set_sys_clock_khz(120000, true);
-    clock_configure(clk_peri, 0, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS, 120 * MHZ, 120 * MHZ);
+    // The SDK leaves the peripherals on the 48 MHz USB clock; the screen's SPI runs from clk_peri, so give it the
+    // system clock. At 120 MHz the SPI's 20 is exact (120 / 6); at 144 it's 18 (144 / 8), and `s` gives 24.
+    set_sys_clock_khz(VIZ_SYS_MHZ * 1000, true);
+    clock_configure(clk_peri, 0, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS, VIZ_SYS_MHZ * MHZ, VIZ_SYS_MHZ * MHZ);
 
     queue_init(&events, sizeof(event_t), 128);
     queue_init(&to_fm1, sizeof(uint8_t), 8);
