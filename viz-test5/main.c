@@ -10,6 +10,8 @@
 //      pump() start the next run of tiles and render the one after (land_set_yield). Before, the screen sat idle
 //      through the step and the step waited for the screen.
 //   4. The log's "frames:" line breaks a frame down: step, prepare, the rest of the tiles, waiting, rendering.
+//   5. (Added after, 2026-11-09) The strip's piece follows the FM-1's, however it was chosen: this says HELLO to
+//      AISLING as a screen reader would, and takes the piece from what it says (reader.h).
 // Everything else is test 4's: gamma FALLING at start-up, warmth 2, the calibration screen, starting on the landscape.
 //
 // The landscape screen: the landscape in y 0-271, a status row in 272-283, the eight pieces in 284-319.
@@ -34,6 +36,7 @@
 #include "land.h"
 #include "cal.h"
 #include "tone.h"
+#include "reader.h"
 
 #define USB_DP 28 // test 1: D+ on GP28, D- on GP29
 
@@ -58,6 +61,7 @@ enum {
     EV_UMOUNT,
     EV_ERROR,     // text
     EV_PC_SENT,   // b[0] program, b[1] transfer result
+    EV_PIECE,     // b[0]: the piece the FM-1's screen reader said it's on
 };
 
 typedef struct {
@@ -97,6 +101,14 @@ static uint16_t in_mps;
 static tusb_desc_endpoint_t in_desc, out_desc;
 static volatile bool out_busy;
 
+// The screen reader (reader.h): a HELLO every 2 seconds while the FM-1 is plugged in, its SysEx read here on core 1
+// (a SAY is up to 80 packets: too many for the event queue), only the piece passed on.
+#define HELLO_EVERY_US 2000000u
+static reader_t rd;
+static uint8_t hello_buf[12] __attribute__((aligned(4)));
+static uint32_t hello_next_us;
+static volatile uint32_t n_said, n_answered, n_hello_failed;
+
 // The web's onClock: intervals under 200 ms count (so a stop and start doesn't), smoothed 0.92 / 0.08.
 static void on_clock(void) {
     uint32_t now = time_us_32(), d = now - clock_last_us;
@@ -116,9 +128,19 @@ static void midi_done(tuh_xfer_t *x) {
         if (!(p[0] | p[1] | p[2] | p[3])) continue; // padding
         if ((p[0] & 0x0F) == 0x0F && p[1] == 0xF8) { n_clock++; on_clock(); continue; }
         if ((p[0] & 0x0F) == 0x0F && p[1] == 0xFE) continue;
+        if ((p[0] & 0x0F) >= 4 && (p[0] & 0x0F) <= 7) {   // SysEx: for the reader, not the paint
+            int piece = reader_packet(&rd, p);
+            if (piece >= 0) {
+                event_t e = {.type = EV_PIECE, .b = {(uint8_t)piece}};
+                post(&e);
+            }
+            continue;
+        }
         event_t e = {.type = EV_MIDI, .b = {p[0], p[1], p[2], p[3]}};
         post(&e);
     }
+    n_said = rd.said;
+    n_answered = rd.answered;
     midi_read(x->daddr);
 }
 
@@ -135,8 +157,12 @@ static void midi_read(uint8_t daddr) {
 }
 
 static void out_done(tuh_xfer_t *x) {
-    event_t e = {.type = EV_PC_SENT, .b = {out_buf[2], (uint8_t)x->result}};
-    post(&e);
+    if (x->user_data) {   // the reader's HELLO: a failure only counted (another goes in 2 seconds)
+        if (x->result != XFER_RESULT_SUCCESS) n_hello_failed++;
+    } else {
+        event_t e = {.type = EV_PC_SENT, .b = {out_buf[2], (uint8_t)x->result}};
+        post(&e);
+    }
     out_busy = false;
 }
 
@@ -188,6 +214,7 @@ static void config_done(tuh_xfer_t *x) {
     }
     in_ep = in;
     out_ep = out;
+    hello_next_us = time_us_32();   // the reader's first HELLO straight away: the FM-1 answers with its whole screen
     event_t e = {.type = EV_MIDI_EP, .b = {in, out}, .w = {in_mps, out_mps}};
     post(&e);
     if (in_ep) midi_read(x->daddr);
@@ -229,6 +256,7 @@ void tuh_umount_cb(uint8_t daddr) {
     in_ep = 0;
     out_ep = 0;
     out_busy = false;
+    rd.in = false;
     uint8_t prog;
     while (queue_try_remove(&to_fm1, &prog)) {}
     event_t e = {.type = EV_UMOUNT};
@@ -265,6 +293,21 @@ static void core1_main(void) {
             if (!tuh_edpt_xfer(&x)) {
                 out_busy = false;
                 post_text(EV_ERROR, "PROGRAM CHANGE WOULDN'T START");
+            }
+        } else if (out_ep && !out_busy && (int32_t)(time_us_32() - hello_next_us) >= 0) {
+            hello_next_us = time_us_32() + HELLO_EVERY_US;
+            tuh_xfer_t x = {
+                .daddr = dev_addr,
+                .ep_addr = out_ep,
+                .buflen = reader_hello(hello_buf),
+                .buffer = hello_buf,
+                .complete_cb = out_done,
+                .user_data = 1,
+            };
+            out_busy = true;
+            if (!tuh_edpt_xfer(&x)) {
+                out_busy = false;
+                n_hello_failed++;
             }
         }
     }
@@ -357,6 +400,13 @@ static void handle(const event_t *e) {
         snprintf(fm1_error, sizeof fm1_error, "%s", e->text);
         say("error: %s", e->text);
         status_due = true;
+        break;
+    case EV_PIECE:
+        if (e->b[0] < 8 && e->b[0] != last_sent) {
+            last_sent = e->b[0];
+            strip_dirty = true;
+            say("the FM-1 says it's on %s", PIECES[last_sent].name);
+        }
         break;
     case EV_PC_SENT:
         if (e->b[1] == XFER_RESULT_SUCCESS) {
@@ -711,7 +761,12 @@ static void log_snapshot(int fps) {
     say("  rendering %lu ms of those; %lu tiles of 510 a frame (last %lu), %lu ms of SPI at this speed",
          (unsigned long)(render_us_sum / f / 1000), (unsigned long)(tiles_sum / f), (unsigned long)last_tiles,
          (unsigned long)((uint64_t)(tiles_sum / f) * LAND_TILE * LAND_TILE * 16 * 1000 / lcd_hz()));
-    say("piece last sent: %s", last_sent >= 0 ? PIECES[last_sent].name : "none");
+    say("piece: %s (sent from the strip, or the FM-1 said)", last_sent >= 0 ? PIECES[last_sent].name : "none yet");
+    if (n_answered)
+        say("screen reader: the FM-1 answered %lu hellos and said %lu things", (unsigned long)n_answered,
+             (unsigned long)n_said);
+    else if (fm1_mounted)
+        say("screen reader: no answer yet (%lu hellos failed to send)", (unsigned long)n_hello_failed);
     log_str("keys: s SPI speed, p palette, g ground, f redraw, d demo, t touch log, m MIDI log");
     log_str("panel keys: w/W warmth down/up, r/R VRH down/up, v/V VCOM down/up, y gamma preset, [ ] gamma field,");
     log_str("  -/+ its value, b back to the start (FALLING, warmth 2), k the chip's own and no warmth (as test 2),");

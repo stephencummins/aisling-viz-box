@@ -22,6 +22,7 @@ add_executable(viz_test5
     cal.c
     tone.c
     land.c
+    reader.c
     usb_descriptors.c
 )
 

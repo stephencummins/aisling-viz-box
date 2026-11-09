@@ -16,6 +16,7 @@ pixel it sends is the one test 4 would have sent, and the host checks compare th
    call `pump()`, which starts the next run of tiles on the DMA and renders the one after into the other half of
    a double buffer. Before, the screen sat idle through the step, and the step waited for the screen.
 4. **The log breaks a frame down** (below), so the next step is a measurement, not a guess.
+5. **(Added after) The strip's piece follows the FM-1's**, however it was chosen (below).
 
 Everything else is test 4's: gamma FALLING at every start-up, warmth 2, the calibration screen and its buttons,
 starting on the landscape, the keys. Nothing is stored; a power cycle starts the same way.
@@ -70,11 +71,34 @@ At 120 MHz the processor is the limit. 144 MHz takes the work down by its sixth 
 gained. `s` gives 24 (144 / 6) and the screen stops being the limit again: the last row is busier music (459 tiles
 against 374) at the same 10 a second.
 
+## The piece in sync
+
+Stephen asked for the strip's highlight to keep in sync with the FM-1 (2026-11-09). It only knew a piece it sent
+itself: one chosen on the FM-1 (PRESET, or a program change from elsewhere) never reached it, because AISLING sends
+no program change out.
+
+AISLING does talk to a screen reader on the computer (its `announce.c`: SysEx `F0 7D 53 52 …`), but only while one
+says HELLO. So the box says HELLO as a reader would, every 2 seconds (`reader.c`), and takes the piece from what the
+FM-1 says back: `PIECE Blasket, …` whenever the piece changes, and `… Piece Blasket, …` in the whole screen it says
+to a reader that has just said hello, so the strip is right from the start. The SysEx is read on core 1 and only the
+piece goes on to the paint's queue (a SAY is up to 80 packets).
+
+Nothing on the FM-1 changes: no firmware, no settings, nothing stored. The reader's HELLO doesn't wake the FM-1 or
+keep it awake (its sleep timer counts buttons, keys, knobs and notes, not SysEx). If the box goes, the FM-1 stops
+talking 5 seconds later. A firmware without the reader never answers, and the strip works as before.
+
+In the log: `the FM-1 says it's on BLASKET` as it changes, and in the snapshot:
+
+    piece: BLASKET (sent from the strip, or the FM-1 said)
+    screen reader: the FM-1 answered 11 hellos and said 4 things
+
+First load, 144 MHz: the FM-1 answered, and the highlight followed it from CAROLAN to BLASKET, no MIDI dropped.
+
 ## Clock
 
 The system clock is a build option, `VIZ_SYS_MHZ`: 120 (the default, as tests 1–4) or 144. It has to be a
 multiple of 12 for PIO-USB, which works its own timing out from it, and the RP2350 is rated to 150. Built at 120,
-the uf2 is byte-identical to the one without the option.
+the option changes nothing: the uf2 was byte-identical to the one before it.
 
     cmake -S . -B build144 -G "Unix Makefiles" -Dpicotool_DIR=/opt/homebrew/lib/cmake/picotool -DVIZ_SYS_MHZ=144
     make -C build144 -j8      # build144/viz_test5.uf2
@@ -90,9 +114,9 @@ Nothing is stored: a power cycle starts at 24 again.
     cmake -S . -B build -G "Unix Makefiles" -Dpicotool_DIR=/opt/homebrew/lib/cmake/picotool
     make -C build -j8
 
-Output: `build/viz_test5.uf2` (181,248 bytes; SHA-256 `d706cc4c…53d70cb707`). No warnings. RAM: the static data
-ends at 474 KB of 512 KB, against test 4's 431 KB by the same measure (the tables and the code moved into RAM);
-38 KB left for the heap.
+Output: `build/viz_test5.uf2` (183,808 bytes with the reader; SHA-256 `bb3475ce…31f49ec9fb`; at 144 MHz,
+`build144/viz_test5.uf2`, `56a0b3d2…4bf60b2115d6`). No warnings. RAM: the static data ends at 474 KB of 512 KB,
+against test 4's 431 KB by the same measure (the tables and the code moved into RAM); 38 KB left for the heap.
 
 ## Host checks
 
@@ -110,6 +134,13 @@ Mac, AddressSanitizer + UBSan; `../hosttests/test5/run.sh`. All passed:
   push starts while one is going or on the calibration screen, and after each warmth change, palette, ground,
   calibration and back, the screen ends up exactly the picture `land_render` gives. 401,968 checks, at four DMA
   speeds. At realistic speeds 88–98% of the pushes overlap the step or prepare.
+- **The reader against AISLING's own `announce.c`** (`reader_check.c`, which includes it from
+  `~/Projects/fm1-aisling` as the firmware does): the box's HELLO turns the reader on there and is answered; every
+  piece, said as a change of piece and inside the whole screen and packed as the FM-1's USB code packs SysEx, with
+  notes, clock and CCs between the packets, names the right piece; resets, other messages, a name cut off, a name
+  with more after it, a SysEx too long, one broken off by a status byte, another maker's and the editor's link are
+  ignored, and a good one straight after still works. 989 checks. Each of six deliberate breaks of `reader.c` (the
+  header, a name, the comma rule, the status-byte rule, the length limit) fails it.
 - **Test 4's own checks** run against test 5's lcd.c, cal.c, tone.c and land.c, with the title changed to test
   5: 116 + 6 passed, test 3's harness OK.
 - **Speed** (the Mac, -O2): the render 2.7 times faster, the step about the same (the Mac has no flash cache to

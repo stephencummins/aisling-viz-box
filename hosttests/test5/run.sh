@@ -5,6 +5,7 @@
 #              built three ways (contract off, on, fast: the board's GCC fuses multiply-adds)
 #   pumpsim.c  main.c's own pump code (cut out of main.c) against a pretend DMA: no buffer changed while it's being
 #              sent, and the screen ends up exactly as the colours say
+#   reader_check.c  reader.c (the strip's piece, from the FM-1's screen reader) against AISLING's own announce.c
 #   test 4's checks (lcd, calibration, warmth, the landscape harness), against test 5's files
 # then, without sanitizers at -O2, the speed of the two renders and the runs a frame.
 set -e
@@ -43,6 +44,17 @@ sed -n '/^static uint16_t strip\[2\]/,/^static int spi_i/p' $V5/main.c | sed '$d
 print -r -- "-- pump, $(wc -l < $O/pump_block.inc | tr -d ' ') lines of main.c"
 clang $F -I$V5 -I$O -Wno-unused-variable -Wno-unused-function pumpsim.c $V5/land.c $V5/tone.c -lm -o $O/pumpsim
 $O/pumpsim ../test2/midilog.txt | grep -E "FAIL|passed|pushes|seed"
+
+# reader.c (the strip's piece from the FM-1's screen reader) against AISLING's own announce.c, as its firmware builds it.
+print -r -- "-- the screen reader, against AISLING's announce.c"
+A=$HOME/Projects/fm1-aisling/firmware/src/announce.c
+if [[ -f $A ]]; then
+    clang $F -Wno-unused-function -I$V5 -DANNOUNCE_C="\"$A\"" -DANN_NAME='"AISLING 1.2"' reader_check.c $V5/reader.c \
+        -o $O/reader
+    $O/reader | grep -E "FAIL|passed|checks"
+else
+    print -r -- "SKIPPED: no $A"
+fi
 
 print -r -- "-- test 4's checks against test 5"
 T4=../test4
