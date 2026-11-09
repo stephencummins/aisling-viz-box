@@ -24,7 +24,7 @@
 #define PIN_TP_IRQ 17 // pin 11, low while touched
 
 #define LCD_SPI spi1
-#define LCD_HZ  (20 * 1000 * 1000)   // 120 MHz clk_peri / 6, exactly
+#define LCD_HZ  (LCD_START_MHZ * 1000 * 1000)   // clk_peri / 6, exactly (lcd.h)
 #define TP_HZ   (1 * 1000 * 1000)   // the XPT2046 is good to about 2 MHz
 
 // Memory access control: MV swaps rows and columns for landscape; 0x08 selects BGR order.

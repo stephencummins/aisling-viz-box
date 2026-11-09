@@ -79,8 +79,9 @@ the uf2 is byte-identical to the one without the option.
     cmake -S . -B build144 -G "Unix Makefiles" -Dpicotool_DIR=/opt/homebrew/lib/cmake/picotool -DVIZ_SYS_MHZ=144
     make -C build144 -j8      # build144/viz_test5.uf2
 
-At 144 MHz the screen SPI starts at 18 MHz; `s` steps it 18 → 24 → 14.4. Nothing is stored, so a power cycle
-starts at 18 again.
+At 144 MHz the screen SPI starts at 24 MHz; `s` steps it 24 → 14.4 → 18. (The first 144 MHz load started at 18,
+and the table above was measured on it; Stephen found 24 lighter and liked its softness, so it starts there now.)
+Nothing is stored: a power cycle starts at 24 again.
 
 ## Build
 

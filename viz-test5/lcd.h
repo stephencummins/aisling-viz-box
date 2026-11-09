@@ -7,6 +7,14 @@
 #define LCD_W 480
 #define LCD_H 320
 
+// The screen's SPI at start-up, in MHz. At a 120 MHz clock, 20 (120 / 6, exact). At 144 the SPI can't make 20 (it
+// gets 18, 144 / 8), so 24 (144 / 6): lighter than 18, and Stephen liked its softness (2026-11-09).
+#if defined(VIZ_SYS_MHZ) && VIZ_SYS_MHZ == 144
+#define LCD_START_MHZ 24
+#else
+#define LCD_START_MHZ 20
+#endif
+
 // RGB565
 #define RGB(r, g, b) ((uint16_t)((((r) & 0xF8) << 8) | (((g) & 0xFC) << 3) | ((b) >> 3)))
 #define C_BLACK  RGB(0, 0, 0)

@@ -650,7 +650,8 @@ static void forget_runs(void) {
     ready = -1;
 }
 
-static int spi_i = 1; // 20 MHz to start: test 2 found 30 a bit too light
+// 20 MHz to start at 120 MHz: test 2 found 30 a bit too light. At 144, asking 30 gets the 24 it starts at (lcd.h).
+static int spi_i = LCD_START_MHZ == 20 ? 1 : 2;
 #define N_SPEEDS 3
 static const uint32_t SPEEDS_MHZ[N_SPEEDS] = {15, 20, 30};
 
