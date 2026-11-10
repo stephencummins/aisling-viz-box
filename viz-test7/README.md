@@ -24,8 +24,9 @@ test 7 lets you turn the FM-1's four knobs from it.
 Everything else is test 6's: gamma FALLING at every start-up, warmth 2, the keys, the clock option. Nothing is
 stored on the box or the FM-1.
 
-**The CCs are untested on hardware.** Everything here is checked against AISLING 1.2's own `ui.c`, built for the
-Mac, but no FM-1 has had a CC from the box yet.
+**Tried on hardware (10 Nov 2026):** on Stephen's FM-1 on AISLING 1.2, a drag on Motion took it from 21 to 58,
+in orange while it turned, and the FM-1 showed NOT SAVED. Everything here is also checked against AISLING 1.2's own
+`ui.c`, built for the Mac.
 
 ## How it turns the knobs
 
