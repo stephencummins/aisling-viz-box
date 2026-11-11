@@ -420,6 +420,58 @@ static void core1_main(void) {
     }
 }
 
+// ---------------------------------------------------------------- the Mac's side of USB: the address, taken at once
+// The Mac gives the box its address (SET_ADDRESS) and asks its next question at that address a few milliseconds
+// later. TinyUSB only takes the address up inside tud_task (dcd_edpt0_status_complete), and this loop can be 30 to
+// 120 ms between two tud_task calls while it paints, so the box was still listening at address 0: the Mac logged
+// "transaction error" and gave up, and test 7 never showed as a serial port. So the address is taken up here, in the
+// USB interrupt, the moment the request's status stage is done (the only transfer a SET_ADDRESS has). tud_task
+// writes the same value again later, which is harmless.
+//
+// -DVIZ_USB_DIAG (a diagnostic build): the status row shows what the box saw: bus resets, SETUPs, transfers done,
+// mounts, the address it holds, and the longest time between two tud_task calls (since the row was drawn / ever).
+#include "device/dcd.h"
+#include "hardware/structs/usb.h"
+#include "hardware/structs/usb_dpram.h"
+static volatile int16_t addr_pending = -1;
+#ifdef VIZ_USB_DIAG
+static volatile uint32_t ud_reset, ud_setup, ud_xfer, ud_mount;
+static uint32_t ud_last_us, ud_gap_now, ud_gap_max;
+void tud_mount_cb(void) { ud_mount++; }
+#endif
+void tud_event_hook_cb(uint8_t rhport, uint32_t eventid, bool in_isr) {
+    (void)rhport;
+    (void)in_isr;
+    if (eventid == DCD_EVENT_SETUP_RECEIVED) {
+        const volatile uint8_t *sp = usb_dpram->setup_packet;   // bmRequestType, bRequest, wValue (low, high)
+        addr_pending = (sp[0] == 0x00 && sp[1] == 0x05) ? (int16_t)(sp[2] & 0x7f) : -1;
+    } else if (eventid == DCD_EVENT_XFER_COMPLETE) {
+        if (addr_pending >= 0) usb_hw->dev_addr_ctrl = (uint32_t)addr_pending;
+        addr_pending = -1;
+    } else if (eventid == DCD_EVENT_BUS_RESET) {
+        addr_pending = -1;
+    }
+#ifdef VIZ_USB_DIAG
+    if (eventid == DCD_EVENT_BUS_RESET) ud_reset++;
+    else if (eventid == DCD_EVENT_SETUP_RECEIVED) ud_setup++;
+    else if (eventid == DCD_EVENT_XFER_COMPLETE) ud_xfer++;
+#endif
+}
+#ifdef VIZ_USB_DIAG
+static void usb_service(void) {
+    uint32_t t = time_us_32();
+    if (ud_last_us) {
+        uint32_t gap = t - ud_last_us;
+        if (gap > ud_gap_now) ud_gap_now = gap;
+        if (gap > ud_gap_max) ud_gap_max = gap;
+    }
+    tud_task();
+    ud_last_us = time_us_32() | 1u;
+}
+#else
+#define usb_service tud_task
+#endif
+
 // ---------------------------------------------------------------- core 0: the log
 
 static bool log_open, log_midi, log_touch;
@@ -871,7 +923,7 @@ static bool HOT(pump)(void) {
         if (!lcd_push_busy()) start_ready();
         did = true;
     }
-    if (did) tud_task();
+    if (did) usb_service();
     return did;
 }
 
@@ -936,6 +988,13 @@ static void draw_status(int fps) {
     int n = snprintf(b, sizeof b, " %3d BPM  WIND 0.%03d  BLOOMS %2d  %s  SPI %lu  WARM %d%s%s", bpm, wind,
                      land_blooms_live(), f, (unsigned long)(lcd_hz() / 1000000), tone_step(),
                      n_dropped ? "  DROPS" : "", demo ? "  DEMO" : "");
+#ifdef VIZ_USB_DIAG
+    n = snprintf(b, sizeof b, " USB RESETS %lu SETUPS %lu DONE %lu MOUNTS %lu ADDR %lu GAP %lu/%lu MS", (unsigned long)ud_reset,
+                 (unsigned long)ud_setup, (unsigned long)ud_xfer, (unsigned long)ud_mount,
+                 (unsigned long)(usb_hw->dev_addr_ctrl & 0x7f), (unsigned long)(ud_gap_now / 1000),
+                 (unsigned long)(ud_gap_max / 1000));
+    ud_gap_now = 0;
+#endif
     int room = LCD_W / 6 - 8;
     if (n > room) n = room;
     memset(b + n, ' ', (size_t)(room - n));
@@ -1146,7 +1205,7 @@ int main(void) {
     uint32_t period_frames = 0, status_ms = 0;
 
     for (;;) {
-        tud_task();
+        usb_service();
         drain_events();
         keys();
         poll_touch();

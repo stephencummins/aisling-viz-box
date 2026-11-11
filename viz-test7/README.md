@@ -28,7 +28,7 @@ stored on the box or the FM-1.
 in orange while it turned, and the FM-1 showed NOT SAVED. Everything here is also checked against AISLING 1.2's own
 `ui.c`, built for the Mac.
 
-**For AISLING 1.3 (11 Nov 2026: built and on the board, loaded through BOOT; Stephen turned Chorus from the box on the FM-1 that day and it worked; the box did not show as a serial port on the Mac that day, cause not found):** PERFORM's fourth knob is Chorus
+**For AISLING 1.3 (11 Nov 2026: built and on the board, loaded through BOOT; Stephen turned Chorus from the box on the FM-1 that day and it worked; the box did not show as a serial port on the Mac until that day's fix: see "The serial port" below):** PERFORM's fourth knob is Chorus
 (Off, then 1 to 100) where 1.2 had Sweep, so `fm1scr.c`'s label and `knobtab.h` are 1.3's now (24 lists, 967
 values), made from `hosttests/test7/corpus.txt`, everything 1.3 says (8,982 texts; test 6 keeps 1.2's). A held
 key's effect name on PERFORM ("Stutter", "Tape stop") is taken as a message. `run.sh` passes against 1.3's `ui.c`
@@ -36,7 +36,7 @@ key's effect name on PERFORM ("Stutter", "Tape stop") is taken as a message. `ru
 28 caught. The numbers under Host checks below are 1.2's run. The `.uf2` on the site is still
 1.2's table: against a 1.3 FM-1 it shows Chorus as a message, not on the fourth knob, and can't turn it.
 
-**PERFORM's flash (11 Nov 2026, for AISLING 1.3; on the board since that day, loaded through BOOT and verified, untried with the FM-1):** when a key is held on PERFORM
+**PERFORM's flash (11 Nov 2026, for AISLING 1.3; on the board since that day, loaded through BOOT and verified; Stephen tried it with the FM-1 that day: "good enough for this release"):** when a key is held on PERFORM
 the FM-1 fills its screen with the effect's colour and its name. The box does the same over y 0-271, on the
 landscape and on the FM-1's page: the name large (the 5x7 font at up to 8 times, so `lcd_text` takes scale 8 now),
 the effect's line under it, black on the effect's own colour. `pflash.h` holds the 27 names, lines and colours,
@@ -164,14 +164,28 @@ DIR; `--no-sweep` leaves out the 22-second sweep). All passed:
 
 ## Load (Stephen's call, each time)
 
-Test 5's 144 MHz build is on the board (test 6 has never been loaded), so no BOOT button. With the screen on and
-"USB" in the Mac:
+With a build from 11 Nov 2026 or later on the board (the serial port's fix, below), no BOOT button. With the screen
+on and "USB" in the Mac:
 
     stty -f /dev/cu.usbmodem101 1200    # the 1200-baud touch: reboots into the bootloader
     picotool load -x build144/viz_test7.uf2
 
 If that fails, the first-load way: screen off, hold BOOT, plug "USB" in, drag the .uf2 onto `RP2350`. Never power
 both sockets from two sources at once: they share one VBUS.
+
+## The serial port (found and fixed 11 Nov 2026)
+
+No test 7 build had ever shown as a serial port on the Mac, though test 5 did on the same cable. The Mac's log
+(`/usr/bin/log show`, kernel, "enumerat") had "transaction error" on endpoint 0 and "enumeration failed" every 1.3 s.
+The cause: the Mac gives the box an address and asks its next question at that address a few milliseconds later,
+but TinyUSB only takes the address up inside `tud_task`, and this loop goes 30 to 120 ms between two `tud_task`
+calls while it paints. The box was still listening at address 0. `tud_event_hook_cb` in main.c now takes the address
+up in the USB interrupt, when the request's status stage completes.
+
+A diagnostic build (`cmake -S . -B build144-usbdiag -DVIZ_SYS_MHZ=144 -DVIZ_USB_DIAG=ON`) puts the counters on the
+status row: RESETS, SETUPS, DONE, MOUNTS, ADDR, and the longest gap between `tud_task` calls in ms (since the row was
+drawn / ever). Before the fix: 21 resets before one lucky mount. After it, on the board: 1 reset, and the port at
+the first attempt in six restarts out of six, three of them with the FM-1 attached.
 
 Test 7 is test 6 plus the knobs, so loading it also tries test 6's page for the first time. To go back: test 6
 (`../viz-test6/build144/viz_test6.uf2`, `466e0d5b…`) or test 5 (`../viz-test5/build144/viz_test5.uf2`,

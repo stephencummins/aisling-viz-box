@@ -36,6 +36,11 @@ target_compile_definitions(viz_test7 PRIVATE VIZ_BOARD=1)
 # The system clock in MHz: 120 (the default, as tests 1-4) or 144 (cmake ... -DVIZ_SYS_MHZ=144 -B build144).
 set(VIZ_SYS_MHZ 120 CACHE STRING "system clock, MHz: a multiple of 12, at most 150")
 target_compile_definitions(viz_test7 PRIVATE VIZ_SYS_MHZ=${VIZ_SYS_MHZ})
+# A diagnostic build (cmake ... -DVIZ_USB_DIAG=ON -B build144-usbdiag): the status row shows the Mac's side of USB.
+option(VIZ_USB_DIAG "status row shows the USB device side's counters" OFF)
+if(VIZ_USB_DIAG)
+    target_compile_definitions(viz_test7 PRIVATE VIZ_USB_DIAG=1)
+endif()
 
 target_link_libraries(viz_test7 PRIVATE
     pico_stdlib
