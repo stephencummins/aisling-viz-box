@@ -55,6 +55,7 @@ static inline void tight_loop_contents(void) {}
 static uint32_t fake_us;
 static uint32_t time_us_32(void) { return fake_us += 3; }
 static void tud_task(void) {}
+static void usb_service(void) {}   // test 7 since its serial fix, and test 8: the pump's name for tud_task
 
 // ---- MIDI from the log, a few at a time as drain_events would find them
 static unsigned ev[512][3];
