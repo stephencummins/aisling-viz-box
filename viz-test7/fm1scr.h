@@ -71,6 +71,9 @@ typedef struct {
     uint8_t locked;
     const char *pv[4];
     uint8_t pv_idx[4], pv_n[4];
+    // (AISLING 1.3) PERFORM's effect heard last (pflash.h's index; -1 none), and how long its flash stays up
+    int8_t flash;
+    uint32_t flash_until;
 } fm1scr_t;
 
 void fm1scr_init(fm1scr_t *m);
@@ -98,4 +101,14 @@ const char *fm1scr_view_name(int view);
 const char *fm1scr_label(int view, int i);
 
 #define FM1SCR_BOTTOM 272     // the area's end: the status row starts here
+
+// (AISLING 1.3) The flash: on PERFORM a held key's effect fills the FM-1's screen with its colour and its name. AISLING
+// says the name when the key goes down ("Stutter", "Tape stop") and nothing when it's let go, so the box can't hold
+// the flash as long as the key: it shows it for FM1_FLASH_MS from the last name heard, on any of the box's pages.
+#define FM1_FLASH_MS 1000u
+// The effect whose flash is up at now_ms (pflash.h's index), or -1.
+int fm1scr_flash(const fm1scr_t *m, uint32_t now_ms);
+// Effect k's flash over the whole area (y 0-271): its colour, its name large, its line under it. What it covers is
+// not marked dirty: the caller draws its page again when the flash ends.
+void fm1scr_draw_flash(int k);
 #endif

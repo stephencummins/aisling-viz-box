@@ -28,13 +28,21 @@ stored on the box or the FM-1.
 in orange while it turned, and the FM-1 showed NOT SAVED. Everything here is also checked against AISLING 1.2's own
 `ui.c`, built for the Mac.
 
-**For AISLING 1.3 (11 Nov 2026: built and on the board, loaded through BOOT; the landscape draws, the knob page is untried with the FM-1, and the box did not show as a serial port on the Mac that day, cause not found):** PERFORM's fourth knob is Chorus
+**For AISLING 1.3 (11 Nov 2026: built and on the board, loaded through BOOT; Stephen turned Chorus from the box on the FM-1 that day and it worked; the box did not show as a serial port on the Mac that day, cause not found):** PERFORM's fourth knob is Chorus
 (Off, then 1 to 100) where 1.2 had Sweep, so `fm1scr.c`'s label and `knobtab.h` are 1.3's now (24 lists, 967
 values), made from `hosttests/test7/corpus.txt`, everything 1.3 says (8,982 texts; test 6 keeps 1.2's). A held
 key's effect name on PERFORM ("Stutter", "Tape stop") is taken as a message. `run.sh` passes against 1.3's `ui.c`
 (`FM=~/Projects/aisling-drafts/fw-1.3` until 1.3 is merged): the sweep's 13,312 CCs, all 24 lists, 28 breaks of
-28 caught. The numbers under Host checks below are 1.2's run. The `.uf2` on the board and on the site is still
+28 caught. The numbers under Host checks below are 1.2's run. The `.uf2` on the site is still
 1.2's table: against a 1.3 FM-1 it shows Chorus as a message, not on the fourth knob, and can't turn it.
+
+**PERFORM's flash (11 Nov 2026, for AISLING 1.3; built, not on the board yet):** when a key is held on PERFORM
+the FM-1 fills its screen with the effect's colour and its name. The box does the same over y 0-271, on the
+landscape and on the FM-1's page: the name large (the 5x7 font at up to 8 times, so `lcd_text` takes scale 8 now),
+the effect's line under it, black on the effect's own colour. `pflash.h` holds the 27 names, lines and colours,
+made by `hosttests/test7/gen_pflash.py` from AISLING's `ui.c`. AISLING says an effect's name when its key goes down
+and nothing when it's let go, so the flash is timed: one second from the last name heard (`FM1_FLASH_MS`), then the
+page is drawn again. A longer hold outlasts it. Calibration is never covered. No change to AISLING.
 
 ## How it turns the knobs
 

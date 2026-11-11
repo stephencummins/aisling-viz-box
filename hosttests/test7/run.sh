@@ -5,7 +5,9 @@
 #   reader_check.c   test 5's: reader.c against AISLING's own announce.c (the piece in sync)
 #   fm1scr_check.c   test 6's (everything AISLING 1.2 says, through announce.c and reader.c, the model and every pixel)
 #                    plus test 7's: each knob said back counted, the value being sent and its bar, the dimmed labels,
-#                    the box's own warning
+#                    the box's own warning; and (AISLING 1.3) PERFORM's flash: which texts put it up, for how long,
+#                    and its picture for each of the 27 effects
+#   gen_pflash.py    pflash.h (the effects' names, lines and colours) made again from fm1-aisling's ui.c: the same
 #   gen_knobtab.py   knobtab.h made again from the corpus and fm1-aisling's ui.c, amb.c, amb.h: the same
 #   knobctl_check.c  knobctl.c on its own (units), then against AISLING's real ui.c through fm1-aisling's own host
 #                    build (amb_host, built into a temp dir, its sources untouched): every CC to every knob the
@@ -53,7 +55,7 @@ $O/reader | grep -E "FAIL|passed|checks"
 print -r -- "-- the FM-1's screen"
 fm1scr() {   # $1: the fm1scr.c to build against; $2: the program
     clang $F -I../test4/stub -I$V -DFM1SCR_C="\"$1\"" -DANNOUNCE_C="\"$A\"" -DANN_NAME='"AISLING 1.3"' \
-        fm1scr_check.c $V/lcd.c $V/tone.c $V/reader.c ../test4/stub.c -o $2
+        fm1scr_check.c $V/lcd.c $V/tone.c $V/reader.c ../test4/stub.c -lm -o $2
 }
 fm1scr ${V:A}/fm1scr.c $O/fm1scr
 if [[ -n $shots ]]; then
@@ -70,6 +72,11 @@ python3 -I gen_knobtab.py $C $V/fm1scr.c $FM/firmware/src/app/ui.c $FM/firmware/
     $FM/firmware/src/dsp/amb.h $O/knobtab.h
 cmp $O/knobtab.h $V/knobtab.h
 print -r -- "knobtab.h: the same"
+
+print -r -- "-- PERFORM's effects, made again"
+python3 -I gen_pflash.py $FM/firmware/src/app/ui.c $O/pflash.h
+cmp $O/pflash.h $V/pflash.h
+print -r -- "pflash.h: the same"
 
 print -r -- "-- the knobs from the box"
 kc() {   # $1: the directory with fm1scr.c and knobctl.c; $2: the program
@@ -123,6 +130,8 @@ MF=(
     fm1scr.c fm1scr.c fm1scr.c fm1scr.c fm1scr.c fm1scr.c
     knobctl.c knobctl.c knobctl.c knobctl.c knobctl.c knobctl.c knobctl.c knobctl.c knobctl.c knobctl.c knobctl.c
     knobctl.c knobctl.c
+    # PERFORM's flash
+    fm1scr.c fm1scr.c fm1scr.c
 )
 MN=(
     "a turned knob's label: the shortest that fits (Echo time 1/4. as Echo)"
@@ -153,6 +162,9 @@ MN=(
     "Motion's knobs: a page a step off what was sent taken as not taken"
     "a page change under the finger not cancelling the drag"
     "a send not waited for: the next drag starts from the FM-1's old value"
+    "an effect's name putting its flash up on any page"
+    "a flash that never comes down"
+    "the flash's line left undrawn"
 )
 ME=(
     's/if (n > bl \&\& /if ((best < 0 || n < bl) \&\& /'
@@ -183,12 +195,15 @@ ME=(
     's/abs(idx - k->w\[i\].idx) < abs(idx - k->w\[i\].before)/0/'
     's/m->view != k->view/0/g'
     's/k->base = k->at = (int16_t)(k->w\[i\].waiting \&\& k->w\[i\].list == list ? k->w\[i\].idx : idx);/k->base = k->at = (int16_t)idx;/'
+    's/^static bool flash_page(const fm1scr_t \*m) { return m->view == V_PERFORM || m->view < 0; }/static bool flash_page(const fm1scr_t *m) { return true; }/'
+    's/(int32_t)(now - m->flash_until) < 0 ? m->flash : -1/m->flash_until ? m->flash : -1/'
+    's/^    box_text(0, mid, LCD_W, FM1SCR_BOTTOM - mid, 0, 16, t, PF_LINE, AL_C, C_BLACK, c);$//'
 )
 caught=0
 for i in {1..${#MN}}; do
     rm -rf $O/b
     mkdir -p $O/b
-    cp $V/fm1scr.c $V/fm1scr.h $V/knobctl.c $V/knobctl.h $V/knobtab.h $O/b/
+    cp $V/fm1scr.c $V/fm1scr.h $V/knobctl.c $V/knobctl.h $V/knobtab.h $V/pflash.h $O/b/
     sed "${ME[$i]}" $V/${MF[$i]} > $O/b/${MF[$i]}
     if cmp -s $O/b/${MF[$i]} $V/${MF[$i]}; then
         print -r -- "FAIL: break $i didn't apply: ${MN[$i]}"

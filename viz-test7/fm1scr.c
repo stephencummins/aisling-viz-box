@@ -4,6 +4,7 @@
 #include <string.h>
 #include "fm1scr.h"
 #include "lcd.h"
+#include "pflash.h"
 
 // ---- AISLING's names (ui.c: VIEW_NAME, KNOB_LABEL, CHORD_Q), in its order ----
 
@@ -107,11 +108,15 @@ void fm1scr_caps(char *out, const char *s, int max) {
 
 // ---- the model ----
 
+// The pages an effect's flash belongs to: PERFORM, or none heard yet.
+static bool flash_page(const fm1scr_t *m) { return m->view == V_PERFORM || m->view < 0; }
+
 void fm1scr_init(fm1scr_t *m) {
     memset(m, 0, sizeof *m);
     m->playing = m->unsaved = -1;
     m->view = -1;
     m->turned = -1;
+    m->flash = -1;
     m->next_pct = -1;
     m->hold = -1;
     m->drawn_conn = -1;
@@ -495,7 +500,20 @@ void fm1scr_say(fm1scr_t *m, const char *text, uint32_t n, uint8_t flags, uint32
         // (AISLING 1.3: on PERFORM a held key says its effect's name, "Stutter", "Tape stop": a message, nothing missed)
         if (m->view != V_PERFORM && t[0] >= 'A' && t[0] <= 'Z' && t[1] >= 'a' && t[1] <= 'z') m->n_unmatched++;
     }
+    // (AISLING 1.3) an effect's name, whole: its flash. Also with no page heard yet (the box started on the
+    // landscape with the FM-1 already on PERFORM, and has asked for no WHERE): only PERFORM says these names alone.
+    if (flash_page(m))
+        for (int k = 0; k < PFLASH_N; k++)
+            if (!strcmp(t, PFLASH[k].name)) {
+                m->flash = (int8_t)k;
+                m->flash_until = now + FM1_FLASH_MS;
+                break;
+            }
     message(m, t, flags, now);
+}
+
+int fm1scr_flash(const fm1scr_t *m, uint32_t now) {
+    return m->flash >= 0 && flash_page(m) && (int32_t)(now - m->flash_until) < 0 ? m->flash : -1;
 }
 
 void fm1scr_tick(fm1scr_t *m, uint32_t now) {
@@ -571,6 +589,22 @@ static void box_text(int bx, int by, int bw, int bh, int ty, int pad, const char
     fill(bx, by + ty, tx - bx, th, bg);
     fill(tx + tw, by + ty, bx + bw - tx - tw, th, bg);
     if (n) lcd_text(tx, by + ty, t, scale, fg, bg);
+}
+
+// (AISLING 1.3) PERFORM's flash: the lettering black on the effect's colour, as the FM-1's.
+#define PF_NAME_MAX 8   // the name's scale at most: "TAPE STOP" is 432 px
+#define PF_LINE 2
+#define PF_GAP 20
+void fm1scr_draw_flash(int k) {
+    if (k < 0 || k >= PFLASH_N) return;
+    char t[81];
+    uint16_t c = PFLASH[k].col;
+    fm1scr_caps(t, PFLASH[k].name, 80);
+    int sc = fit((int)strlen(t), LCD_W - 32, PF_NAME_MAX);
+    int top = (FM1SCR_BOTTOM - (8 * sc + PF_GAP + 8 * PF_LINE)) / 2, mid = top + 8 * sc + PF_GAP;
+    box_text(0, 0, LCD_W, mid, top, 16, t, sc, AL_C, C_BLACK, c);
+    fm1scr_caps(t, PFLASH[k].line, 80);
+    box_text(0, mid, LCD_W, FM1SCR_BOTTOM - mid, 0, 16, t, PF_LINE, AL_C, C_BLACK, c);
 }
 
 // The same, in capitals (but a flat's b), at the largest scale up to max that fits, centred in the box's height.

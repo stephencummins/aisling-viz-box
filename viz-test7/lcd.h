@@ -29,7 +29,7 @@
 // Flat colours and text go through the warmth (tone.h) on the way out; pixels pushed by DMA are sent as they are
 // (the landscape takes the warmth itself, before its dither).
 void lcd_fill_rect(int x, int y, int w, int h, uint16_t colour);
-// 5x7 font scaled by `scale`; a character cell is 6*scale wide and 8*scale tall.
+// 5x7 font scaled by `scale`; a character cell is 6*scale wide and 8*scale tall (scale 1 to 8).
 void lcd_text(int x, int y, const char *s, int scale, uint16_t fg, uint16_t bg);
 
 // Touch: the pen IRQ alone (cheap, no SPI).

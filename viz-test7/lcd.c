@@ -212,12 +212,12 @@ static const uint8_t *glyph(char c) {
     return blank_glyph(g) ? font5x7[unknown_q] : g;
 }
 
-static uint16_t cell[24 * 32];
+static uint16_t cell[48 * 64];   // a character at scale 8 (PERFORM's flash); 4 was the most before it
 
 void lcd_text(int x, int y, const char *s, int scale, uint16_t fg, uint16_t bg) {
     lcd_push_wait();
     if (scale < 1) scale = 1;
-    if (scale > 4) scale = 4;
+    if (scale > 8) scale = 8;
     fg = tone_565(fg);
     bg = tone_565(bg);
     const int cw = 6 * scale, ch = 8 * scale;

@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "lcd.h"
@@ -78,7 +79,7 @@ static void chk_fill_rect(int x, int y, int w, int h, uint16_t c) {
 static void chk_text(int x, int y, const char *s, int scale, uint16_t fg, uint16_t bg) {
     int n = (int)strlen(s);
     checks++;
-    if (scale < 1 || scale > 4 || !n || x < 0 || y < 0 || x + n * 6 * scale > LCD_W || y + 8 * scale > FM1SCR_BOTTOM) {
+    if (scale < 1 || scale > 8 || !n || x < 0 || y < 0 || x + n * 6 * scale > LCD_W || y + 8 * scale > FM1SCR_BOTTOM) {
         if (++draw_bad <= 5) printf("FAIL text out of the area: %d,%d scale %d \"%s\"\n", x, y, scale, s);
     }
     for (const char *p = s; *p; p++)
@@ -1231,6 +1232,88 @@ static void anything(void) {
 
 // ---------------------------------------------------------------- main
 
+// (AISLING 1.3) PERFORM's flash: each effect's name puts it up, on PERFORM or with no page heard, for FM1_FLASH_MS;
+// nothing else does; and its drawing fills the area with the effect's colour and black lettering.
+static void flash_checks(const char *shots) {
+    static const char *const NOT[] = {"LOCK ON", "PERFORM ON", "STUTTER", "Stutter 4", "Stutter ", "Tape", "Ornament 35"};
+    int q0 = glyph_q;
+    for (int k = 0; k < PFLASH_N; k++) {
+        const char *nm = PFLASH[k].name;
+        for (int v = -1; v < FM1_VIEWS; v++) {
+            fm1scr_t c;
+            fm1scr_init(&c);
+            c.view = (int8_t)v;
+            CHECK(fm1scr_flash(&c, 0) < 0, "a flash before anything was said (view %d)", v);
+            fm1scr_say(&c, nm, (uint32_t)strlen(nm), FM1_SAY_FLAG_NOW, 5000);
+            bool on = v < 0 || v == V_PERFORM;
+            CHECK(fm1scr_flash(&c, 5000) == (on ? k : -1), "%s on view %d: flash %d", nm, v, fm1scr_flash(&c, 5000));
+            CHECK(fm1scr_flash(&c, 5000 + FM1_FLASH_MS - 1) == (on ? k : -1), "%s on view %d: gone early", nm, v);
+            CHECK(fm1scr_flash(&c, 5000 + FM1_FLASH_MS) < 0, "%s on view %d: still up at the end", nm, v);
+            if (v == V_PERFORM) {
+                CHECK(!strcmp(c.msg, nm), "%s: not kept as the header's message too", nm);
+                // held again: from the new press; the next effect's takes over; a page change takes it down
+                fm1scr_say(&c, nm, (uint32_t)strlen(nm), FM1_SAY_FLAG_NOW, 5600);
+                CHECK(fm1scr_flash(&c, 5600 + FM1_FLASH_MS - 1) == k, "%s again: not from the new press", nm);
+                const char *o = PFLASH[(k + 1) % PFLASH_N].name;
+                fm1scr_say(&c, o, (uint32_t)strlen(o), FM1_SAY_FLAG_NOW, 5700);
+                CHECK(fm1scr_flash(&c, 5700) == (k + 1) % PFLASH_N, "%s after %s: not the new one", o, nm);
+                c.view = V_AISLING;
+                CHECK(fm1scr_flash(&c, 5700) < 0, "%s: still up on another page", o);
+            }
+        }
+        // its picture: the whole area written, the colour and black alone, the name and the line in capitals
+        char cap[81], line[81];
+        fm1scr_caps(cap, nm, 80);
+        fm1scr_caps(line, PFLASH[k].line, 80);
+        fb_clear(fb_new);
+        nrec = 0, n_texts = 0;
+        fm1scr_draw_flash(k);
+        decode(fb_new);
+        CHECK(!unwritten(fb_new), "%s's flash: %d pixels unwritten", nm, unwritten(fb_new));
+        int other = 0, ink = 0;
+        for (int i = 0; i < LCD_W * FM1SCR_BOTTOM; i++) {
+            other += fb_new[i] != PFLASH[k].col && fb_new[i] != C_BLACK;
+            ink += fb_new[i] == C_BLACK;
+        }
+        CHECK(other == 0, "%s's flash: %d pixels neither its colour nor black", nm, other);
+        CHECK(ink > 2000, "%s's flash: %d pixels of lettering", nm, ink);
+        CHECK(n_texts == 2 && drawn_has(cap) && drawn_has(line), "%s's flash: its name and its line", nm);
+        CHECK(n_texts == 2 && texts[0].s >= 6 && texts[0].x >= 16 && texts[1].y >= texts[0].y + 8 * texts[0].s,
+              "%s's flash: the name's size and place", nm);
+        // black on it readable: the colour's luminance against black, 4.5:1 or better (as AISLING's pfcontrast)
+        int r = PFLASH[k].col >> 11 & 31, g = PFLASH[k].col >> 5 & 63, b = PFLASH[k].col & 31;
+        double l = 0.2126 * pow(r / 31.0, 2.2) + 0.7152 * pow(g / 63.0, 2.2) + 0.0722 * pow(b / 31.0, 2.2);
+        CHECK((l + 0.05) / 0.05 >= 4.5, "%s's flash: contrast %.1f", nm, (l + 0.05) / 0.05);
+        if (shots && (k == 0 || k == 11 || k == 16)) {
+            char path[512];
+            snprintf(path, sizeof path, "%s/flash-%d.ppm", shots, k);
+            FILE *f = fopen(path, "wb");
+            if (f) {
+                fprintf(f, "P6\n%d %d\n255\n", LCD_W, FM1SCR_BOTTOM);
+                for (int i = 0; i < LCD_W * FM1SCR_BOTTOM; i++) {
+                    uint32_t v = fb_new[i];
+                    int rr = v >> 11 & 31, gg = v >> 5 & 63, bb = v & 31;
+                    uint8_t rgb[3] = {(uint8_t)(rr << 3 | rr >> 2), (uint8_t)(gg << 2 | gg >> 4), (uint8_t)(bb << 3 | bb >> 2)};
+                    fwrite(rgb, 1, 3, f);
+                }
+                fclose(f);
+            }
+        }
+    }
+    for (int i = 0; i < (int)(sizeof NOT / sizeof NOT[0]); i++) {
+        fm1scr_t c;
+        fm1scr_init(&c);
+        c.view = V_PERFORM;
+        fm1scr_say(&c, NOT[i], (uint32_t)strlen(NOT[i]), FM1_SAY_FLAG_NOW, 100);
+        CHECK(fm1scr_flash(&c, 100) < 0, "\"%s\" put a flash up", NOT[i]);
+    }
+    fm1scr_draw_flash(-1);
+    fm1scr_draw_flash(PFLASH_N);
+    CHECK(nrec == 0, "a flash drawn for no effect");
+    CHECK(glyph_q == q0, "%d glyphs of the flashes drawn as '?'", glyph_q - q0);
+    printf("e. PERFORM's flash: %d effects\n", PFLASH_N);
+}
+
 int main(int argc, char **argv) {
     const char *shots = NULL;
     bool quick = false;
@@ -1279,6 +1362,7 @@ int main(int argc, char **argv) {
     printf("a2. beyond the corpus: done\n");
     knobs_from_the_box(shots);
     end_to_end();
+    flash_checks(shots);
     printf("c. end to end: %u frames through the reader\n", sent_frames);
     int real_q = glyph_q;   // the random bytes below draw '?' on purpose
     if (!quick) anything();

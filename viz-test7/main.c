@@ -572,6 +572,10 @@ static uint32_t touch_last_ms, touch_first_ms;
 static void forget_runs(void);
 static void want_where_now(void);
 
+// (AISLING 1.3) The flash of an effect held on PERFORM (fm1scr.h), over the landscape or the FM-1's page: the one drawn
+// now (-1 none). While it's up its page isn't drawn; when it ends the page is drawn again, whole.
+static int pf_shown = -1;
+
 static void show_land(void) {
     cal_press_show(-1);
     touch_btn = -1;
@@ -608,6 +612,7 @@ static void show_cal(void) {
     knobctl_reset(&kc, &fm1);
     pressed_cell = -1;
     screen = SCR_CAL;
+    pf_shown = -1;   // calibration draws over a flash, and none is drawn on it
     cal_draw();
     say("screen: calibration");
 }
@@ -620,8 +625,24 @@ static void redraw_all(void) {
     }
     if (screen == SCR_FM1) fm1scr_redraw(&fm1);
     else force_redraw = true;
+    pf_shown = -1;   // a flash still up is drawn again too
     lcd_fill_rect(0, STATUS_Y, LCD_W, STRIP_Y - STATUS_Y, C_BLACK);
     strip_dirty = status_due = true;
+}
+
+// The flash put up, changed for the next effect's, or taken down.
+static void flash_tick(uint32_t now) {
+    int f = screen == SCR_CAL ? -1 : fm1scr_flash(&fm1, now);
+    if (f == pf_shown) return;
+    if (f >= 0) {
+        forget_runs();   // the landscape's tiles still to send would land on it
+        fm1scr_draw_flash(f);
+    } else if (screen == SCR_FM1) {
+        fm1scr_redraw(&fm1);
+    } else if (screen == SCR_LAND) {
+        force_redraw = true;
+    }
+    pf_shown = f;
 }
 
 // After a panel setting has changed: what to draw again. A reset leaves the screen black.
@@ -1133,7 +1154,8 @@ int main(void) {
         // The paint runs on every page, so notes that come during calibration or the FM-1's screen still land. Off the
         // landscape it steps ten times a second and isn't drawn, which leaves the time between steps to touch.
         uint64_t t0 = time_us_64();
-        if (screen == SCR_LAND || t0 - last_us >= 100000) {
+        flash_tick(to_ms_since_boot(get_absolute_time()));
+        if ((screen == SCR_LAND && pf_shown < 0) || t0 - last_us >= 100000) {
             float dt = (float)(t0 - last_us) / 16666.7f;
             last_us = t0;
             // After a stall, one big step rather than a jump. Test 2 capped it at 6 frames, which slowed the paint
@@ -1154,7 +1176,7 @@ int main(void) {
                 where_tick(now);
                 fm1scr_tick(&fm1, now);
                 knobctl_tick(&kc, &fm1, now);   // (test 7) the FM-1's answers to the knobs, and what's shown sent
-                fm1scr_draw(&fm1, fm1_mounted ? (n_answered ? 2 : 1) : 0, now);
+                if (pf_shown < 0) fm1scr_draw(&fm1, fm1_mounted ? (n_answered ? 2 : 1) : 0, now);
                 if (strip_dirty) {
                     strip_dirty = false;
                     draw_strip();
@@ -1164,6 +1186,17 @@ int main(void) {
                     status_ms = now;
                     draw_status(-1);
                 }
+            }
+        } else if (pf_shown >= 0) {   // a flash over the landscape: the paint steps (above), nothing of it is sent
+            period_t0 = time_us_64();
+            period_frames = 0;
+            if (strip_dirty) {
+                strip_dirty = false;
+                draw_strip();
+            }
+            if (status_due) {
+                status_due = false;
+                draw_status(fps_shown);
             }
         } else {
             uint64_t t1 = time_us_64();
