@@ -28,7 +28,7 @@ stored on the box or the FM-1.
 in orange while it turned, and the FM-1 showed NOT SAVED. Everything here is also checked against AISLING 1.2's own
 `ui.c`, built for the Mac.
 
-**For AISLING 1.3 (11 Nov 2026, source only: not built, not on the board):** PERFORM's fourth knob is Chorus
+**For AISLING 1.3 (11 Nov 2026: built and on the board, loaded through BOOT; the landscape draws, the knob page is untried with the FM-1, and the box did not show as a serial port on the Mac that day, cause not found):** PERFORM's fourth knob is Chorus
 (Off, then 1 to 100) where 1.2 had Sweep, so `fm1scr.c`'s label and `knobtab.h` are 1.3's now (24 lists, 967
 values), made from `hosttests/test7/corpus.txt`, everything 1.3 says (8,982 texts; test 6 keeps 1.2's). A held
 key's effect name on PERFORM ("Stutter", "Tape stop") is taken as a message. `run.sh` passes against 1.3's `ui.c`
