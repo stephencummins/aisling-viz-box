@@ -236,6 +236,9 @@ int perf_fx_release(perf_t *p, bool ok) {
     p->fx_done = false;
     if (!ok || done || c < 0) return PERF_STAY;
     int e = perf_fx_at(c);   // the page buttons act as the finger lifts, so it can't land on the next page
+    if (e == FXB_PAD)   // to the pad: what's held here is let go, so nothing is left on with no cell in sight to show it
+        for (int k = 0; k < PFLASH_N; k++)
+            if (p->held[k]) fx_set(p, k, false);
     return e == FXB_PAD ? PERF_GO_PAD : e == FXB_LAND ? PERF_GO_LAND : PERF_STAY;
 }
 

@@ -208,6 +208,17 @@ static void units(void) {
     CHECK(fx_tap(&p, cell_btn(FXB_PAD), 4, true) == PERF_GO_PAD && fx_tap(&p, cell_btn(FXB_LAND), 4, true) == PERF_GO_LAND,
           "the page buttons");
     CHECK(fx_tap(&p, cell_btn(FXB_PAD), 1, true) == PERF_STAY, "one reading on a button");
+    {   // to the pad: what's held is let go (a 0 for each, no other CC); to the landscape it stays held
+        perf_t q; perf_init(&q);
+        fx_tap(&q, st, 2, true); fx_tap(&q, rv, 2, true);
+        int a0 = perf_fx_at(st), a1 = perf_fx_at(rv);
+        CHECK(a0 >= 0 && a1 >= 0 && perf_nheld(&q) == 2, "two held before the page buttons");
+        q.due = 0;
+        CHECK(fx_tap(&q, cell_btn(FXB_LAND), 4, true) == PERF_GO_LAND && perf_nheld(&q) == 2 && !q.due, "to the landscape: still held");
+        CHECK(fx_tap(&q, cell_btn(FXB_PAD), 1, true) == PERF_STAY && perf_nheld(&q) == 2 && !q.due, "one reading on PAD: still held");
+        CHECK(fx_tap(&q, cell_btn(FXB_PAD), 4, true) == PERF_GO_PAD && !perf_nheld(&q)
+              && q.due == ((1u << a0) | (1u << a1)) && !q.out[a0] && !q.out[a1], "to the pad: let go, due %x", (unsigned)q.due);
+    }
     perf_fx_touch(&p, 40, 20 + 2 * FX_CH, true, true);   // Reverb, held: let go; then slid to PAD and lifted
     perf_fx_touch(&p, 40, 20 + 2 * FX_CH, false, true);
     perf_fx_touch(&p, 3 * FX_CW + 40, 5 * FX_CH + 20, false, true);

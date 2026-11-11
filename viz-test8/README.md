@@ -4,7 +4,7 @@ Test 8 for the AISLING visualiser box (Waveshare RP2350-PiZero, ELEGOO 3.5" SPI 
 FM-1 on the lower "PIO-USB" socket). Stephen said (2026-11-11): "build the latching grid and the XY pad". Test 7
 turned the FM-1's knobs from the box; test 8 adds two pages for playing AISLING 1.3's PERFORM effects from it.
 
-**On the board since 11 Nov 2026 (the 144 MHz build, loaded with picotool from the bootloader and verified; it starts on the landscape at 24 MHz SPI). Nothing here has been tried by hand yet.** It is checked on the Mac, against AISLING
+**On the board since 11 Nov 2026 (the 144 MHz build of that day's first commit, `44b5f743…`, loaded with picotool from the bootloader and verified). Stephen tried the grid and the pad with the FM-1 that day: "It's brilliant." The PAD button letting go of what's held came after and is not on the board yet.** It is checked on the Mac, against AISLING
 1.3.1's own `ui.c` (see Host checks).
 
 1. **The effects page: all 27 PERFORM effects, each a cell. Tap one and it's held; tap it again and it's let go.**
@@ -22,7 +22,10 @@ turned the FM-1's knobs from the box; test 8 adds two pages for playing AISLING 
    effects, and the effects and the pad have buttons for each other and for the landscape (LAND). On these two
    pages a tap is never a page flip, and the 2-second hold for calibration works only from the landscape and the
    FM-1's page.
-5. **What's held stays held on every page** of the box. The status row shows `HOLD 3` while any are.
+5. **Going to the pad lets go of everything held** (Stephen, 11 Nov 2026: "when it switches to pad, just turn off
+   any locked effect"): the PAD button sends each held effect's CC at 0 before the page changes, so nothing is left
+   on where no cell shows it. Going to the landscape or the FM-1's page keeps what's held; the status row shows
+   `HOLD 3` while any are.
 6. **The uncial hand.** The names on both pages are in Uncial Antiqua, the font of AISLING's own page names. The
    landscape, the FM-1's page, the flash and calibration are as they were, in the plain font.
 
@@ -74,8 +77,8 @@ refused for want of an FM-1, glitches. The rest are test 7's.
     make -C build144 -j8
 
 Output (11 Nov 2026): `build/viz_test8.uf2` (298,496 bytes; SHA-256
-`0138aa6625670e8a1a079a11eee7f1dea46251552b394fb36594a37de95bfed1`) and, at 144 MHz as on the board,
-`build144/viz_test8.uf2` (298,496 bytes; `44b5f74358edd509cccd8fcee09ead2b2f65fb53fb8bf8ae28f9effdc7185ae0`).
+`99a29e327d119f9f297218b0f3deaf122169357471102999b87f0a8cc66d6a40`) and, at 144 MHz as on the board,
+`build144/viz_test8.uf2` (298,496 bytes; `526dc6d2d00717378e417caf278290708affdee188d224ba956e03f90edeab42`).
 No warnings. Code 152,860 bytes (test 7 123,076), most of it the font; RAM grows by 3,324 bytes.
 
 ## Host checks
@@ -86,7 +89,7 @@ into DIR; `--no-sweep` leaves out test 7's 22-second sweep). All passed on 11 No
 - **Test 7's whole `run.sh`, against test 8's folder:** the shared files are test 7's byte for byte, the pump
   code is cut from test 8's `main.c`, the FM-1 page, the knob drags, test 4's screen and calibration checks, and
   its 31 deliberate breaks, 31 caught.
-- **`perf_check.c` units (3,298 checks):** the grid is each effect once and three buttons; the CC numbers; a tap's
+- **`perf_check.c` units (3,302 checks):** the grid is each effect once and three buttons; the CC numbers; a tap's
   one toggle, a long and a sliding touch, no FM-1, ALL OFF, PERFORM left; the pad's ends, every CC in order, the
   rest in the middle, jitter, a glitch, a real jump, the edges, the axes never on one knob, reset. **The
   drawing:** every word sent to the screen is decoded; a full redraw covers every pixel above the status row and
@@ -97,7 +100,7 @@ into DIR; `--no-sweep` leaves out test 7's 22-second sweep). All passed on 11 No
   over all twelve pairings of knobs) are played into fm1-aisling's host build, built into a temp directory. After
   each, AISLING must hold exactly the effects the box shows (`expect pcc`) or say the value the pad shows
   (`said Filter Open 34`): 557 held or said as sent, none not, nothing saved.
-- **18 deliberate breaks of `perf.c`, 18 caught.**
+- **19 deliberate breaks of `perf.c`, 19 caught.**
 
 `run.sh` uses `~/Projects/fm1-aisling`, or a worktree beside it, whichever has 1.3's generated headers; this run
 was against 1.3.1 (`aisling-drafts/rel131`, ae2e804).
