@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Test 7: makes viz-test7/knobtab.h, each FM-1 knob's values in order (its lo to its hi) as AISLING 1.2 says them, so
+# Test 7: makes viz-test7/knobtab.h, each FM-1 knob's values in order (its lo to its hi) as AISLING 1.3 says them, so
 # the box can step a knob through them and send the CC for each (AISLING's ui.c, cc_in: CC 16-19 set the page's
 # four knobs, 0..127 across the knob's range).
 #
@@ -139,6 +139,10 @@ for v in range(NV):
             L = MODE_LIST
             if len(got) != len(L) or len(set(got)) != 1 or got[0] not in L:
                 die("Mode: the corpus isn't %d of one mode" % len(L))
+        elif k == 'K_CHORUS':   # (1.3) PERFORM's fourth knob: speak_dump doesn't walk it either. ui.c knob_text
+            L = ['Off'] + [str(x) for x in range(1, 101)]
+            if len(got) != 101 or len(set(got)) != 1 or got[0] not in L:
+                die("Chorus: the corpus isn't 101 of one of its values")
         elif k == 'K_PLAY':
             L = ['Endless', 'Loop']
             if len(got) != 2 or len(set(got)) != 1 or got[0] not in L:
@@ -160,7 +164,7 @@ for v in range(NV):
             lists.append(L)
         KT[v][i] = list_of[key]
 
-out = ["// knobtab.h: each FM-1 knob's values in order, its lo to its hi, as AISLING 1.2 says them; the box steps a",
+out = ["// knobtab.h: each FM-1 knob's values in order, its lo to its hi, as AISLING 1.3 says them; the box steps a",
        "// knob through these and sends the CC for each (knobctl.c). Made by hosttests/test7/gen_knobtab.py from test 6's",
        "// corpus and fm1-aisling's ui.c, amb.c and amb.h (our own code): don't edit, run it again.",
        "#ifndef VIZ_KNOBTAB_H_INCLUDED",

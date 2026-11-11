@@ -18,9 +18,9 @@ setopt pipefail   # a check that fails stops it, its FAIL lines shown
 cd "${0:A:h}"
 V6=../../viz-test6
 V=../../viz-test7
-FM=$HOME/Projects/fm1-aisling
+FM=${FM:-$HOME/Projects/fm1-aisling}   # AISLING 1.3's tree (till 1.3 is merged: FM=~/Projects/aisling-drafts/fw-1.3)
 A=$FM/firmware/src/announce.c
-C=../test6/corpus.txt
+C=corpus.txt   # everything AISLING 1.3 says (its host build's speakdump); test 6 keeps 1.2's
 O=$(mktemp -d)
 F=(-std=gnu11 -g -O1 -Wall -Wextra -Wno-unused-parameter -fsanitize=address,undefined -fno-sanitize-recover=undefined)
 sweep=1
@@ -46,13 +46,13 @@ if [[ ! -f $A ]]; then
     exit 1
 fi
 print -r -- "-- the screen reader (test 5's check), against AISLING's announce.c"
-clang $F -Wno-unused-function -I$V -DANNOUNCE_C="\"$A\"" -DANN_NAME='"AISLING 1.2"' ../test5/reader_check.c \
+clang $F -Wno-unused-function -I$V -DANNOUNCE_C="\"$A\"" -DANN_NAME='"AISLING 1.3"' ../test5/reader_check.c \
     $V/reader.c -o $O/reader
 $O/reader | grep -E "FAIL|passed|checks"
 
 print -r -- "-- the FM-1's screen"
 fm1scr() {   # $1: the fm1scr.c to build against; $2: the program
-    clang $F -I../test4/stub -I$V -DFM1SCR_C="\"$1\"" -DANNOUNCE_C="\"$A\"" -DANN_NAME='"AISLING 1.2"' \
+    clang $F -I../test4/stub -I$V -DFM1SCR_C="\"$1\"" -DANNOUNCE_C="\"$A\"" -DANN_NAME='"AISLING 1.3"' \
         fm1scr_check.c $V/lcd.c $V/tone.c $V/reader.c ../test4/stub.c -o $2
 }
 fm1scr ${V:A}/fm1scr.c $O/fm1scr

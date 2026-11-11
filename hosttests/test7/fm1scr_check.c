@@ -467,6 +467,15 @@ static void corpus_walk(const char *shots) {
     for (int i = 0; i < nl; i++) {
         const char *k = kind[i], *t = text[i];
         uint8_t fl = flags_of(k, t);
+        // (AISLING 1.3) a held key's effect, "Stutter", "Tape stop": the FM-1 says these on PERFORM only, but its
+        // dump says them after the last page it walked. So the model is put on PERFORM first, by the corpus's own line.
+        if (!strcmp(k, "MSG") && t[0] >= 'A' && t[0] <= 'Z' && t[1] >= 'a' && t[1] <= 'z' && strncmp(t, "Tempo ", 6) &&
+            m.view != 17) {
+            int j = 0;
+            while (j < nl && (strcmp(kind[j], "SCREEN") || strncmp(text[j], "Perform page", 12))) j++;
+            CHECK(j < nl, "%s: no Perform page in the corpus", t);
+            if (j < nl) say(&m, text[j], ANN_NOW, 100);
+        }
         fm1scr_t b = m;
         say(&m, t, fl, 100);
         check_inv(&m, t);
@@ -1233,7 +1242,7 @@ int main(int argc, char **argv) {
     load(argc > 1 ? argv[1] : "corpus.txt");
     printf("corpus: %d lines (%d SCREEN, %d KNOB, %d WHERE, %d CHORD, %d MSG, %d WARN)\n", nl, count_kind("SCREEN"),
            count_kind("KNOB"), count_kind("WHERE"), count_kind("CHORD"), count_kind("MSG"), count_kind("WARN"));
-    CHECK(nl == 8952, "%d lines", nl);
+    CHECK(nl == 8982, "%d lines", nl);   // (AISLING 1.3's; 1.2's 8,952 are test 6's)
 
     static const panel_t P0 = {0};
     lcd_init(&P0);

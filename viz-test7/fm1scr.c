@@ -12,7 +12,7 @@ static const char *const VIEW_NAME[FM1_VIEWS] = {
     "Lead sound", "Seq2 sound", "Drone move", "Repeats", "Lead move", "Chords", "Pattern", "Perform", "Key",
     "Atmosphere", "Echo", "Atmos sound", "Arc", "Seq move", "Seq2 move", "Atmos move", "Lead style",
 };
-enum { V_AISLING = 0, V_SETUP = 6, V_CHORDS = 15, V_PATTERN = 16, V_KEY = 18 };
+enum { V_AISLING = 0, V_SETUP = 6, V_CHORDS = 15, V_PATTERN = 16, V_PERFORM = 17, V_KEY = 18 };
 
 static const char *const KNOB_LABEL[FM1_VIEWS][4] = {
     {"Filter", "Evolve", "Motion", "Drift"}, {"Pedal", "Reso", "Phaser", "Attack"},
@@ -23,7 +23,7 @@ static const char *const KNOB_LABEL[FM1_VIEWS][4] = {
     {"Tone", "Attack", "Reverb", "Echo"}, {"Cutoff", "Decay", "Reverb", "Echo"},
     {"Width", "Time", "Rate", "Intro"}, {"Repeat A", "A time", "Repeat B", "B time"},
     {"Width", "Time", "Rate", "Intro"}, {"Slot", "Chord", "Type", "Play"},
-    {"Lane", "Accent", "Chance", "Play"}, {"Filter", "Wet", "Energy", "Sweep"},
+    {"Lane", "Accent", "Chance", "Play"}, {"Filter", "Wet", "Energy", "Chorus"},
     {"Tempo", "Root", "Mode", "Transpose"}, {"Density", "Width", "Drift", "Air"},
     {"Blur", "Tone", "Width", "Size"}, {"Colour", "Ring", "Reverb", "Echo"},
     {"Lead in", "Bridge", "Arc", "Memory"}, {"Width", "Time", "Rate", "Intro"},
@@ -492,7 +492,8 @@ void fm1scr_say(fm1scr_t *m, const char *text, uint32_t n, uint8_t flags, uint32
         }
         // (a knob of a page the box missed, as its capital-then-lowercase label: shown as a message; the WHERE
         // puts it right)
-        if (t[0] >= 'A' && t[0] <= 'Z' && t[1] >= 'a' && t[1] <= 'z') m->n_unmatched++;
+        // (AISLING 1.3: on PERFORM a held key says its effect's name, "Stutter", "Tape stop": a message, nothing missed)
+        if (m->view != V_PERFORM && t[0] >= 'A' && t[0] <= 'Z' && t[1] >= 'a' && t[1] <= 'z') m->n_unmatched++;
     }
     message(m, t, flags, now);
 }
