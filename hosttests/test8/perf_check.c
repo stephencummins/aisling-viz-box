@@ -320,6 +320,14 @@ static void units(void) {
     xy_tap(&p, ax, btn_y(XYB_RESET), 3, false);
     CHECK(!p.due && p.idx[0] < 0 && p.n_refused == 2, "the pad with no FM-1");
 
+    {   // held on the effects page, it's still held on the pad, and nothing is sent for going there
+        perf_t q; perf_init(&q);
+        fx_tap(&q, st, 2, true);
+        q.due = 0;
+        CHECK(fx_tap(&q, cell_btn(FXB_PAD), 4, true) == PERF_GO_PAD && perf_nheld(&q) == 1 && !q.due, "to the pad: still held");
+        xy_tap(&q, 100, 100, 3, true);
+        CHECK(perf_nheld(&q) == 1 && !(q.due & ((1u << PFLASH_N) - 1)), "the pad moved: still held");
+    }
     // the drawing: a run of touches on each page, drawn bit by bit, against a fresh full redraw after each
     for (int xy = 0; xy < 2; xy++) {
         perf_init(&p);
@@ -344,6 +352,12 @@ static void units(void) {
                 draw(&p, xy);
             }
             if (step % 97 == 96) perf_gone(&p), perf_forget_pad(&p), draw(&p, xy);
+            // the pad's Effects button names what's held: effects held and let go while the pad is up (an effect
+            // can't be tapped from there, but PERFORM left can clear them, and the page is entered with some held)
+            if (xy && step % 5 == 2) fx_tap(&p, (int)(r >> 12) % (FX_CELLS - 3), 2, true), draw(&p, xy);
+            if (xy && step % 31 == 30)
+                for (int k = 0; k < PFLASH_N; k++)
+                    if (p.held[k] && perf_nheld(&p) > (int)(r >> 9) % 3) fx_tap(&p, cell_of(PFLASH[k].name), 2, true), draw(&p, xy);
             decode(fb_a);
             fresh(&p, xy, fb_b);
             int d = differ(fb_a, fb_b);
@@ -367,13 +381,17 @@ static void shots(const char *dir) {
     for (unsigned i = 0; i < sizeof H / sizeof H[0]; i++) fx_tap(&p, cell_of(H[i]), 3, true);
     fresh(&p, false, fb_a);
     ppm(dir, "effects-held", fb_a);
+    for (unsigned i = 0; i < sizeof H / sizeof H[0]; i++) fx_tap(&p, cell_of(H[i]), 3, true);   // let go again
     fresh(&p, true, fb_a);
     ppm(dir, "pad", fb_a);
+    fx_tap(&p, cell_of("Macalla"), 3, true);
+    fx_tap(&p, cell_of("Half time"), 3, true);
     perf_xy_touch(&p, 250, 80, true, true);
     perf_xy_touch(&p, 251, 80, false, true);
     perf_xy_release(&p, true, true);
     fresh(&p, true, fb_a);
     ppm(dir, "pad-touched", fb_a);
+    fx_tap(&p, cell_of("Half time"), 3, true);   // one held
     xy_tap(&p, XY_PAD_W + 40, btn_y(XYB_X), 3, true);
     xy_tap(&p, XY_PAD_W + 40, btn_y(XYB_X), 3, true);
     perf_xy_touch(&p, 330, 200, true, true);
@@ -381,6 +399,9 @@ static void shots(const char *dir) {
     perf_xy_release(&p, true, true);
     fresh(&p, true, fb_a);
     ppm(dir, "pad-chorus", fb_a);
+    for (unsigned i = 2; i < sizeof H / sizeof H[0]; i++) fx_tap(&p, cell_of(H[i]), 3, true);
+    fresh(&p, true, fb_a);
+    ppm(dir, "pad-many", fb_a);
 }
 
 // ---------------------------------------------------------------- through AISLING's ui.c
