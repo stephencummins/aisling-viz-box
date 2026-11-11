@@ -1,5 +1,4 @@
 // perf.c: (test 8) the effects page and the pad. See perf.h.
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "perf.h"
@@ -105,7 +104,6 @@ void perf_gone(perf_t *p) {
         int k = perf_fx_at(c);
         if (k >= 0 && p->held[k]) p->held[k] = 0, p->fx_dirty |= 1u << c;
     }
-    p->xy_dirty |= XYD_BTN0 << XYB_FX;   // the pad's Effects button names what's held
     p->due &= ~((1u << PFLASH_N) - 1);   // and nothing of theirs still to send
 }
 
@@ -196,7 +194,6 @@ static void fx_set(perf_t *p, int k, bool on) {
     else p->n_lets++;
     for (int c = 0; c < FX_CELLS; c++)
         if (perf_fx_at(c) == k) p->fx_dirty |= 1u << c;
-    p->xy_dirty |= XYD_BTN0 << XYB_FX;
 }
 
 void perf_fx_touch(perf_t *p, int x, int y, bool first, bool live) {
@@ -369,26 +366,6 @@ static void xy_button(const perf_t *p, int b) {
     int x = XY_PAD_W + 1, y = b * XY_BTN_H + 1, w = LCD_W - XY_PAD_W - 2, h = XY_BTN_H - 2;
     bool pr = b == p->xy_press;
     uint16_t bg = pr ? C_GREY : b <= XYB_Y ? C_CELL : RGB(52, 44, 60);
-    if (b == XYB_FX && !pr && perf_nheld(p)) {
-        // What's held on the effects page stays held here, for the pad to work on: this button names it, in its own
-        // colours as its cell is. One fills the button, two share it, more are counted.
-        int n = perf_nheld(p), k[2], i = 0;
-        for (int e = 0; e < PFLASH_N && i < 2; e++)
-            if (p->held[e]) k[i++] = e;
-        if (n == 1) name_box(x, y, w, h, PFLASH[k[0]].name, C_BLACK, PFLASH[k[0]].col);
-        else if (n == 2) {
-            for (i = 0; i < 2; i++) {
-                int by = y + i * (h / 2), lh = uf(15)->h;
-                lcd_fill_rect(x, by, w, h / 2, PFLASH[k[i]].col);
-                line_c(x, by + (h / 2 - lh) / 2, w, PFLASH[k[i]].name, C_BLACK, PFLASH[k[i]].col);
-            }
-        } else {
-            char t[12];
-            snprintf(t, sizeof t, "%d held", n);
-            name_box(x, y, w, h, t, C_BLACK, C_VELLUM);
-        }
-        return;
-    }
     if (b > XYB_Y) {
         name_box(x, y, w, h, b == XYB_RESET ? "Reset" : b == XYB_FX ? "Effects" : "Land", pr ? C_BLACK : C_VELLUM, bg);
         return;

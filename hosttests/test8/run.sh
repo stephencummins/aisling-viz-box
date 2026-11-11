@@ -104,7 +104,6 @@ MN=(
     "the pad: the old cross's square left on the screen"
     "a cell lit but not drawn again"
     "the grid one row into the status row"
-    "the pad's Effects button not drawn again when what's held changes"
 )
 ME=(
     's/c < 0 || p->fx_n < 2) return;/c < 0 || p->fx_n < 1) return;/'
@@ -125,9 +124,8 @@ ME=(
     's/if (p->cross\[0\] >= 0 \&\& p->cross\[1\] >= 0) lcd_fill_rect(p->cross\[0\] - 4, p->cross\[1\] - 4, 9, 9, C_PADBG);//'
     's/if (perf_fx_at(c) == k) p->fx_dirty |= 1u << c;/;/'
     's/^#define FX_CH   45/#define FX_CH   46/'
-    '/^static void fx_set(/,/^}/s/p->xy_dirty |= XYD_BTN0 << XYB_FX;//'
 )
-MF=(perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.h perf.c)
+MF=(perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.c perf.h)
 caught=0
 for i in {1..${#MN}}; do
     rm -rf $O/b
