@@ -36,7 +36,7 @@ key's effect name on PERFORM ("Stutter", "Tape stop") is taken as a message. `ru
 28 caught. The numbers under Host checks below are 1.2's run. The `.uf2` on the site is still
 1.2's table: against a 1.3 FM-1 it shows Chorus as a message, not on the fourth knob, and can't turn it.
 
-**PERFORM's flash (11 Nov 2026, for AISLING 1.3; built, not on the board yet):** when a key is held on PERFORM
+**PERFORM's flash (11 Nov 2026, for AISLING 1.3; on the board since that day, loaded through BOOT and verified, untried with the FM-1):** when a key is held on PERFORM
 the FM-1 fills its screen with the effect's colour and its name. The box does the same over y 0-271, on the
 landscape and on the FM-1's page: the name large (the 5x7 font at up to 8 times, so `lcd_text` takes scale 8 now),
 the effect's line under it, black on the effect's own colour. `pflash.h` holds the 27 names, lines and colours,
