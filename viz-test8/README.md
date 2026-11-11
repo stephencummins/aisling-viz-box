@@ -4,7 +4,7 @@ Test 8 for the AISLING visualiser box (Waveshare RP2350-PiZero, ELEGOO 3.5" SPI 
 FM-1 on the lower "PIO-USB" socket). Stephen said (2026-11-11): "build the latching grid and the XY pad". Test 7
 turned the FM-1's knobs from the box; test 8 adds two pages for playing AISLING 1.3's PERFORM effects from it.
 
-**Not yet on the board. Nothing here has been tried on hardware.** It is checked on the Mac, against AISLING
+**On the board since 11 Nov 2026 (the 144 MHz build, loaded with picotool from the bootloader and verified; it starts on the landscape at 24 MHz SPI). Nothing here has been tried by hand yet.** It is checked on the Mac, against AISLING
 1.3.1's own `ui.c` (see Host checks).
 
 1. **The effects page: all 27 PERFORM effects, each a cell. Tap one and it's held; tap it again and it's let go.**
@@ -61,7 +61,7 @@ changed, only drawn at two sizes.
 ## Serial keys
 
 `e` the effects page, `x` the pad; with `n` on, each CC is logged (`effect Stutter held, CC 20 = 127`,
-`pad Filter Open 34, CC 74 = 85`). The snapshot (`s`) has a line for these pages: held, holds, lets, moves, taps
+`pad Filter Open 34, CC 74 = 85`). The snapshot (any key that isn't a command, `?` say; `s` is the SPI speed) has a line for these pages: held, holds, lets, moves, taps
 refused for want of an FM-1, glitches. The rest are test 7's.
 
 ## Build
