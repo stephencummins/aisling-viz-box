@@ -131,7 +131,7 @@ static int btn_y(int b) { return b * XY_BTN_H + 20; }
 // (test 9) amounts: which version takes them, who goes to the pad, what the finger sends, reset, the drawing
 static void units9(void) {
     static const struct { const char *s; int want; } FW[] = {
-        {"AISLING 1.4", 1}, {"AISLING 1.4.1", 1}, {"AISLING 1.10", 1}, {"AISLING 2.0", 1}, {"AISLING 1.3.1", 0},
+        {"AISLING 1.4", 1}, {"AISLING DEV", 1}, {"AISLING DEVIL", -1}, {"AISLING 1.4.1", 1}, {"AISLING 1.10", 1}, {"AISLING 2.0", 1}, {"AISLING 1.3.1", 0},
         {"AISLING 1.3", 0}, {"AISLING 0.5.1", 0}, {"DUB-1 1.4", -1}, {"AISLING x", -1}, {"AISLING 14", -1},
     };
     for (unsigned i = 0; i < sizeof FW / sizeof FW[0]; i++) {

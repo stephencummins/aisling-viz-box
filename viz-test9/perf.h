@@ -76,7 +76,7 @@ int perf_slot_cc(int slot);             // the CC a slot is sent on
 int perf_fx_cc(int k);                  // effect k's (AISLING's pkey_cc)
 int perf_nheld(const perf_t *p);
 // (test 9) The screen reader's HELLO answer (the bytes between F0 and F7: 7D 53 52 01 ver "AISLING 1.4" 0 link):
-// 1 if it names AISLING 1.4 or later, 0 an earlier one, -1 not such an answer. main.c sets p->amounts from it.
+// 1 if it names AISLING 1.4 or later (or DEV, a build not yet released), 0 an earlier one, -1 not such an answer. main.c sets p->amounts from it.
 int perf_fw(const uint8_t *buf, int n);
 int perf_amt_cc(int px, bool y_axis);   // the amount a place on the pad is: 64 at the near end .. 127 at the far
 int perf_fx_at(int cell);               // the effect in a cell, or FXB_*

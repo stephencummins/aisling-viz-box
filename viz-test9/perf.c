@@ -317,6 +317,7 @@ int perf_fw(const uint8_t *buf, int n) {
     if (n < 5 + 8 + 3 || buf[0] != 0x7D || buf[1] != 0x53 || buf[2] != 0x52 || buf[3] != 1) return -1;
     if (memcmp(buf + i, A, 8)) return -1;
     i += 8;
+    if (!memcmp(buf + i, "DEV", 3) && (i + 3 >= n || !buf[i + 3])) return 1;   // a build not yet released says DEV: the newest
     if (buf[i] < '0' || buf[i] > '9') return -1;
     for (; i < n && buf[i] >= '0' && buf[i] <= '9'; i++) maj = maj * 10 + buf[i] - '0';
     if (i >= n || buf[i] != '.') return -1;
