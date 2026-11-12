@@ -1,4 +1,19 @@
-# viz-test9
+# viz-test10: the landscape as the pad
+
+**Written and host-checked 12 Nov 2026; not on the board, untried.** Test 9 with one addition, all in the box (no
+firmware change). A finger that travels 10 px across the landscape (two readings in a row) is the pad's touch laid over
+the whole picture: across and up do what the pad's ACROSS and UP do. On AISLING 1.4 the first two effects held that have
+an amount take the axes (nothing else is let go); with none, or on 1.3, the pad's two knobs. Until it travels nothing is
+sent, so a tap still changes page and a two-second hold still opens calibration. While the finger is down the status row
+says what the two axes are doing. No mark is drawn under the finger: the picture is sent in changed tiles only, and a
+mark would be left behind wherever the paint is still.
+
+Checks: `../hosttests/test10/run.sh` (test 9's, 23 more unit checks, 5 more deliberate breaks: 36 of 36 caught).
+144 MHz build `build144/viz_test10.uf2`, SHA-256 5b727a4b…bab1c8.
+
+What follows is test 9's, which all still holds.
+
+## viz-test9
 
 Test 8, and AISLING 1.4's amounts. Everything below "viz-test8" is test 8's and still holds; this part is what's new.
 
