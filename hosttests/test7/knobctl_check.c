@@ -105,8 +105,10 @@ static void table_checks(void) {
         for (int i = 0; i < 4; i++) {
             int l = knobctl_list_of(v, i);
             CHECK(l >= -1 && l < KT_NLISTS, "%s knob %d: list %d", fm1scr_view_name(v), i, l);
-            CHECK(fm1scr_label(v, i) && fm1scr_label(v, i)[0], "%s knob %d: no label", fm1scr_view_name(v), i);
-            if (v == V_SETUP) CHECK(l < 0, "Setup's %s can be turned from the box", fm1scr_label(v, i));
+            CHECK(fm1scr_label(v, i), "%s knob %d: no label", fm1scr_view_name(v), i);
+            // (test 11) a place with no knob (AISLING 1.4's Journey has three): no label, and nothing to turn
+            if (!fm1scr_label(v, i)[0]) CHECK(l < 0 && v >= 27, "%s knob %d: no label", fm1scr_view_name(v), i);
+            else if (v == V_SETUP) CHECK(l < 0, "Setup's %s can be turned from the box", fm1scr_label(v, i));
             else CHECK(l >= 0, "%s's %s can't be turned from the box", fm1scr_view_name(v), fm1scr_label(v, i));
         }
     CHECK(knobctl_list_of(-1, 0) == -1 && knobctl_list_of(FM1_VIEWS, 0) == -1 && knobctl_list_of(0, 4) == -1,
@@ -814,10 +816,15 @@ static const nav_t SWEEP_NAV[] = {
     {NULL, 0, 1},     {"ENV", 1, 1},   {"ENV", 8, 1},   {"ENV", 12, 1},  {"FX", 5, 1},     {"FX", 20, 1},
     {"LFO", 3, 1},    {"LFO", 10, 1},  {"LFO", 26, 1},  {"LFO", 14, 1},  {"ARP", 2, 1},    {"ARP", 9, 1},
     {"ARP", 13, 1},   {"ARP", 23, 1},  {"SEQ", 4, 1},   {"SEQ", 11, 1},  {"SEQ", 16, 1},   {"SEQ", 24, 1},
-    {"SAVE", 19, 1},  {"SAVE", 21, 1}, {"SAVE", 25, 1}, {"GLO", 6, 1},   {"GLO", 22, 1},   {"EDIT", 15, 1},
+    {"SAVE", 19, 1},  {"SAVE", 21, 1}, {"SAVE", 25, 1}, {"GLO", 6, 1},   {"GLO", 22, 1},
+#if FM1_VIEWS > 27   // (test 11) AISLING 1.4's Journey: GLO a third time
+    {"GLO", 27, 1},
+#endif
+    {"EDIT", 15, 1},
     {"HOME", 0, 0},   {"HOME", 18, 1}, {"SEL", 17, 1},
 };
 #define NSWEEP (int)(sizeof SWEEP_NAV / sizeof SWEEP_NAV[0])
+#define NSWEPT (NSWEEP - 1)   // the pages swept: all but Mix (HOME's first tap is a page already swept)
 // Aisling's Evolve last: above 0 it moves the Filter on its own
 static const int AISLING_ORDER[4] = {0, 2, 3, 1}, ORDER[4] = {0, 1, 2, 3};
 
@@ -840,6 +847,7 @@ static void sweep_script(const char *out) {
                         i, v, i, v);
         }
         if (nv->view == V_AISLING) fprintf(f, "midi B0 11 00\nwait 300\n");
+        if (nv->view == 27) fprintf(f, "midi B0 13 00\nwait 300\n");   // (the Journey's Day: off again)
     }
     fclose(f);
     printf("sweep script: %d pages, %d CCs\n", NSWEEP, n);
@@ -949,9 +957,9 @@ static void sweep_check(const char *path) {
     int nv = 0, nl = 0;
     for (int v = 0; v < FM1_VIEWS; v++) nv += view_seen[v];
     for (int l = 0; l < KT_NLISTS; l++) nl += list_seen[l];
-    CHECK(np == NSWEEP && nk == 26 * 4 && nc == 26 * 4 * 128 && nw == nc, "the sweep's markers: %d pages, %d knobs, "
+    CHECK(np == NSWEEP && nk == NSWEPT * 4 && nc == NSWEPT * 4 * 128 && nw == nc, "the sweep's markers: %d pages, %d knobs, "
           "%d CCs, %d WHEREs", np, nk, nc, nw);
-    CHECK(nv == 26 && !view_seen[7], "the sweep reached %d pages", nv);
+    CHECK(nv == NSWEPT && !view_seen[7], "the sweep reached %d pages", nv);
     CHECK(nl == KT_NLISTS, "the sweep covered %d of the %d lists", nl, KT_NLISTS);
     printf("sweep: %d pages (all but Mix), %d CCs through AISLING's ui.c, each then a WHERE: every page as the box's "
            "table has it (%d of Motion's a step or two off), all %d lists; Setup's %d CCs moved nothing; %d turns said "

@@ -1325,11 +1325,29 @@ int main(int argc, char **argv) {
     load(argc > 1 ? argv[1] : "corpus.txt");
     printf("corpus: %d lines (%d SCREEN, %d KNOB, %d WHERE, %d CHORD, %d MSG, %d WARN)\n", nl, count_kind("SCREEN"),
            count_kind("KNOB"), count_kind("WHERE"), count_kind("CHORD"), count_kind("MSG"), count_kind("WARN"));
-    CHECK(nl == 8982, "%d lines", nl);   // (AISLING 1.3's; 1.2's 8,952 are test 6's)
+#ifndef CORPUS_LINES
+#define CORPUS_LINES 8982   // (AISLING 1.3's; 1.2's 8,952 are test 6's; test 11 gives 1.4's)
+#endif
+    CHECK(nl == CORPUS_LINES, "%d lines", nl);
 
     static const panel_t P0 = {0};
     lcd_init(&P0);
     nrec = 0;
+
+#if FM1_VIEWS > 27
+    // (test 11) AISLING 1.4's Journey: three knobs, the third place empty
+    fm1scr_init(&m);
+    say(&m, "Journey page: Piece Skellig, In set In, Day 20 min", ANN_NOW, 100);
+    now += 2100;
+    fm1scr_tick(&m, now);
+    fm1scr_set_locked(&m, 4);   // (as knobctl has it: no list for a knob that isn't there)
+    draw_now(&m);
+    CHECK(m.view == 27 && !strcmp(m.value[0], "Skellig") && !strcmp(m.value[1], "In") && !m.value[2][0] &&
+          !strcmp(m.value[3], "20 min"), "the Journey page: view %d, %s, %s, '%s', %s", m.view, m.value[0],
+          m.value[1], m.value[2], m.value[3]);
+    compare_fresh(&m, "the Journey page");
+    shot(shots, "journey", &m, 2);
+#endif
 
     // d. the waiting screens: the whole area, nothing below it
     fm1scr_init(&m);
