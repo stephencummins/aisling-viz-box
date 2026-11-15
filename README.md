@@ -63,4 +63,4 @@ Read the log with `python3 -I log.py /dev/cu.usbmodem* 10` (keys can follow the 
 
 GPL-3.0, as AISLING. See `LICENSE`. The knob and page names in tests 6 and 7 come from AISLING's `ui.c`, which is
 mostly NACHTFAHRT's, by FartyPants (GPL-3.0-only). A built `.uf2` also contains the Raspberry Pi Pico SDK, TinyUSB and
-Pico-PIO-USB: their licences are in `NOTICES.md`.
+Pico-PIO-USB, and from test 12 ChaN's FatFs: their licences are in `NOTICES.md`.
