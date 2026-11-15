@@ -1,8 +1,8 @@
 # viz-test15: the picture turned half a turn
 
 **On the board since 15 Nov 2026 (the 144 MHz build below, loaded with picotool from the bootloader, over test 14).
-Stephen: "it worked, picture is the right way up". The touch has not been reported on.** Test 14 with the picture
-and the touch turned half a turn, and nothing else.
+Stephen: "it worked, picture is the right way up" and "touch works fine".** Test 14 with the picture and the
+touch turned half a turn, and nothing else.
 
 Why: the small board's sockets open under one long edge of the screen, and up to test 14 that edge is the picture's
 bottom. A box standing with its cables behind it (in the Lego tray, say) then shows the picture upside down. In
@@ -43,10 +43,8 @@ As test 8's (see test 12's README). 144 MHz build of 15 Nov 2026: `build144/viz_
 
 ## Not tried
 
-The picture is the right way up (Stephen, 15 Nov 2026). Not yet reported:
-
-- that a touch lands where the finger is, at the corners above all;
-- how the landscape looks: the screen is now filled from its other end, so any tearing runs the other way.
+The picture is the right way up and the touch works (Stephen, 15 Nov 2026). Not yet reported: how the landscape
+looks. The screen is now filled from its other end, so any tearing runs the other way.
 
 Test 14 was on the board before this build. A fault seen here that test 14 doesn't show is the turn's:
 `-DVIZ_FLIP=OFF` builds the same code without it. Each earlier README's own "not tried" list still stands.
