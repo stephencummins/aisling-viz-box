@@ -1,6 +1,6 @@
-# AISLING visualiser box
+# AISLING Mór
 
-A small box that shows [AISLING](https://github.com/stephencummins/fm1-aisling) as a picture. A Waveshare
+AISLING Mór ("more", Irish for big: the big dream) is a small box that shows [AISLING](https://github.com/stephencummins/fm1-aisling) as a picture. A Waveshare
 RP2350-PiZero acts as USB host to an FM-1 running AISLING, reads its USB MIDI out (ch1 Drone, ch2 Sequence, ch3
 Lead, ch4 Sequence 2, plus clock) and paints a cut-down version of the web visualiser's landscape (Lead sky,
 Sequence 2 hills, Sequence fields, Drone bog) on an ELEGOO 3.5" SPI touch screen (ILI9486 + XPT2046) that plugs
