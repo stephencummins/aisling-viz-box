@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "lcd.h"
+#include "look.h"
 
 #define SETTINGS_FILE "SETTINGS.TXT"
 #define SETTINGS_MAX  3072   // the most of the file read; the box's own is about 1.6 KB
@@ -22,6 +23,7 @@ extern const char *const SET_PALETTES[SET_N_PALETTES];   // land.c's PALETTES
 extern const char *const SET_GROUNDS[SET_N_GROUNDS];     // land.c's GROUNDS
 extern const char *const SET_PADS[SET_N_PADS];           // perf.c's PAD_NAME
 extern const uint8_t SET_SPEEDS_MHZ[SET_N_SPEEDS];       // main.c's SPEEDS_MHZ
+extern const char *const SET_LOOKS[LOOK_N];              // (test 17) look.h's looks, in its order
 
 typedef struct {
     uint8_t warmth;            // tone_step(), 0 .. TONE_STEPS - 1
@@ -29,11 +31,13 @@ typedef struct {
     uint8_t palette, ground;   // indexes into SET_PALETTES and SET_GROUNDS
     panel_t panel;             // VCOM, VRH and gamma, each the chip's own or set
     uint8_t pad[2];            // the pad's knobs, across and up (perf_t's axis): indexes into SET_PADS, different
+    uint8_t look;              // (test 17) the box's own pages: LOOK_DARK or LOOK_LIGHT (look.h)
 } settings_t;
 
 enum {
     SET_WARMTH = 1 << 0, SET_SPI = 1 << 1, SET_PALETTE = 1 << 2, SET_GROUND = 1 << 3,
     SET_VCOM = 1 << 4, SET_VRH = 1 << 5, SET_GAMMA = 1 << 6, SET_PAD_ACROSS = 1 << 7, SET_PAD_UP = 1 << 8,
+    SET_LOOK = 1 << 9,   // (test 17)
 };
 
 typedef struct {

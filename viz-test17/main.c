@@ -1,3 +1,12 @@
+// AISLING visualiser, test 17: test 16, and a light look for the box's own pages.
+//
+// Test 17 (2026-11-16; Stephen, the day AISLING 1.4.1 gave the FM-1 its Screen: Dark or Light: "Can I also get the
+// VOXBOX UI with a light option"). The box's own pages (the strip, the status line, the FM-1's page, the effects, the
+// pad, the card's page, calibration) are dark as before, or light: the same colours turned over and made deeper, on
+// white. One rule on every flat colour as it goes out: look.h. LOOK on the calibration page, or key h; "look" in
+// SETTINGS.TXT. The landscape and its ground are the visualiser's and stay as they are. Test 16's account, as it was
+// written:
+//
 // AISLING visualiser, test 16: test 15, with the strip of pieces moved in from the screen's right edge.
 //
 // Test 16 (2026-11-16; Stephen, of the Lego tray: TIR NA NOG "is partly covered if I add another piece of lego on
@@ -849,9 +858,17 @@ static void panel_changed(bool reset) {
     }
 }
 
+// (test 17) The other look, and the page drawn again in it.
+static void look_next(void) {
+    lcd_look_set(lcd_look() == LOOK_LIGHT ? LOOK_DARK : LOOK_LIGHT);
+    redraw_all();
+    say("look %s", SET_LOOKS[lcd_look()]);
+}
+
 static void cal_button(int b, bool fine) {
     if (b == CAL_LAND) show_land();
     else if (b == CAL_CARD) show_card();   // (test 12)
+    else if (b == CAL_LOOK) look_next();   // (test 17)
     else panel_changed(cal_do(b, fine));
 }
 
@@ -1257,6 +1274,7 @@ static void settings_now(settings_t *s) {
     s->panel = *lcd_panel();
     s->pad[0] = pf.axis[0];
     s->pad[1] = pf.axis[1];
+    s->look = (uint8_t)lcd_look();   // (test 17)
 }
 
 // The box made to do what *s says, and the page drawn again if anything changed (not the card's page: whoever
@@ -1267,6 +1285,10 @@ static void settings_apply(const settings_t *s) {
     bool changed = false;
     if (s->warmth != was.warmth) {
         tone_set(s->warmth);
+        changed = true;
+    }
+    if (s->look != was.look) {   // (test 17)
+        lcd_look_set(s->look);
         changed = true;
     }
     p = was;
@@ -1528,7 +1550,7 @@ static void log_snapshot(int fps) {
         say("  WHEREs asked %lu (%lu failed), texts dropped %lu", (unsigned long)n_where_sent,
              (unsigned long)n_where_failed, (unsigned long)n_said_dropped);
     log_str("keys: s SPI speed, p palette, g ground, f redraw, d demo, t touch log, m MIDI log, a what the FM-1 says,");
-    log_str("  n each knob step, effect and pad value the box sends");
+    log_str("  n each knob step, effect and pad value the box sends, h the look (dark or light)");
     log_str("panel keys: w/W warmth down/up, r/R VRH down/up, v/V VCOM down/up, y gamma preset, [ ] gamma field,");
     log_str("  -/+ its value, b back to the start (FALLING, warmth 2), k the chip's own and no warmth (as test 2),");
     log_str("  c calibration screen, l landscape, o the FM-1's screen, e the effects, x the pad, u the card;");
@@ -1577,6 +1599,7 @@ static void keys(void) {
         }
         case 'p': say("palette %s", land_next_palette()); break;
         case 'g': say("ground %s", land_next_ground()); break;
+        case 'h': look_next(); break;   // (test 17)
         case 'f':
             redraw_all();
             log_str("full redraw");

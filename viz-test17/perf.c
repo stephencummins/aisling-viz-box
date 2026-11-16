@@ -6,6 +6,7 @@
 #include "knobctl.h"
 #include "lcd.h"
 #include "tone.h"
+#include "look.h"
 #include "ufont.h"
 
 static const uint8_t PAD_CC[PERF_PADS] = {74, 78, 79, 80};   // ui.c's CC_FIXED + {0, 4, 5, 6}: Filter, Wet, Energy, Chorus
@@ -129,6 +130,7 @@ static uint16_t ubuf[40 * 36];
 int perf_utext(int x, int y, const char *s, int size, uint16_t fg, uint16_t bg) {
     const ufont_t *f = uf(size);
     uint16_t mix[16];
+    fg = look_565(fg, lcd_look()), bg = look_565(bg, lcd_look());   // (test 17) the look, before the mixing
     for (int a = 0; a < 16; a++) {   // fg over bg at each of the 16 alphas, then the picture's warmth
         int r = ((fg >> 11 & 31) * a + (bg >> 11 & 31) * (15 - a) + 7) / 15;
         int g = ((fg >> 5 & 63) * a + (bg >> 5 & 63) * (15 - a) + 7) / 15;

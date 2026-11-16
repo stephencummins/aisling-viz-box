@@ -15,6 +15,7 @@ enum {
     CAL_VCOM_DN = CAL_BUTTONS, CAL_VCOM_UP, // VCOM made no difference in test 3, so it is keys only
     CAL_CHIP,                               // the chip's own settings and no warmth: the picture as test 2 sent it
     CAL_CARD,                               // (test 12) the card's page: a button of its own, beside the samples
+    CAL_LOOK,                               // (test 17) dark or light: a button of its own, left of CARD
 };
 #define CAL_BTN_Y 256
 

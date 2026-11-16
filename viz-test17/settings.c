@@ -8,6 +8,7 @@
 
 const char *const SET_PALETTES[SET_N_PALETTES] = {"heather", "atlantic", "kells", "evening"};
 const char *const SET_GROUNDS[SET_N_GROUNDS] = {"vellum", "night", "mist"};
+const char *const SET_LOOKS[LOOK_N] = {"dark", "light"};   // (test 17)
 const char *const SET_PADS[SET_N_PADS] = {"Filter", "Wet", "Energy", "Chorus"};
 const uint8_t SET_SPEEDS_MHZ[SET_N_SPEEDS] = {15, 20, 30};
 
@@ -86,6 +87,12 @@ static int one(const char *name, const char *v, settings_t *s, const char **why)
         if ((i = index_of(v, SET_GROUNDS, SET_N_GROUNDS)) < 0) return -1;
         s->ground = (uint8_t)i;
         return SET_GROUND;
+    }
+    if (same_word(name, "look")) {   // (test 17) a file from before it has no such line, and the look stays as it was
+        *why = "should be dark or light";
+        if ((i = index_of(v, SET_LOOKS, LOOK_N)) < 0) return -1;
+        s->look = (uint8_t)i;
+        return SET_LOOK;
     }
     if (same_word(name, "vcom")) {
         *why = "should be chip or 0x00 to 0x80";
@@ -220,6 +227,9 @@ size_t settings_format(const settings_t *s, const char *gamma_name, char *out, s
     put(&t, "# The landscape's colours: heather, atlantic, kells or evening.\npalette = %s\n\n",
         SET_PALETTES[s->palette]);
     put(&t, "# Its ground: vellum, night or mist.\nground = %s\n\n", SET_GROUNDS[s->ground]);
+    put(&t, "# The box's own pages (the strip, the FM-1's page, the effects, the pad, the card, calibration):\n"
+            "# dark, or light (the same colours, deeper, on white). The landscape keeps its ground.\nlook = %s\n\n",
+        SET_LOOKS[s->look < LOOK_N ? s->look : LOOK_DARK]);
     put(&t, "# The panel, as the calibration page sets it. chip leaves a setting at the chip's own value.\n"
             "# vcom: VCOM's register, 0x00 to 0x80 (VCOM = -2 + vcom / 64 volts).\n");
     if (p->vcom_set) {
@@ -262,6 +272,7 @@ bool settings_same(const settings_t *a, const settings_t *b) {
     if (a->warmth != b->warmth || a->spi != b->spi || a->palette != b->palette || a->ground != b->ground ||
         a->pad[0] != b->pad[0] || a->pad[1] != b->pad[1])
         return false;
+    if (a->look != b->look) return false;   // (test 17)
     const panel_t *p = &a->panel, *q = &b->panel;
     if (p->vcom_set != q->vcom_set || (p->vcom_set && p->vcm != q->vcm)) return false;
     if (p->vrh_set != q->vrh_set || (p->vrh_set && p->vrh != q->vrh)) return false;

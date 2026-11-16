@@ -12,6 +12,7 @@
 #include "lcd.h"
 #include "font5x7.h"
 #include "tone.h"
+#include "look.h"
 
 // Header pin -> RP2350 GPIO, from the board's silkscreen.
 #define PIN_SCK    10 // pin 23
@@ -191,6 +192,12 @@ const panel_t *lcd_panel(void) { return &panel_now; }
 
 static uint16_t line[LCD_W];
 
+// (test 17) The look: every flat colour is turned by it (look.h) before the warmth. Pixels (lcd_blit, the pushes)
+// are sent as they are given.
+static uint8_t look_now = LOOK_DARK;
+void lcd_look_set(int look) { look_now = look == LOOK_LIGHT ? LOOK_LIGHT : LOOK_DARK; }
+int lcd_look(void) { return look_now; }
+
 void lcd_fill_rect(int x, int y, int w, int h, uint16_t colour) {
     if (x < 0) { w += x; x = 0; }
     if (y < 0) { h += y; y = 0; }
@@ -198,6 +205,7 @@ void lcd_fill_rect(int x, int y, int w, int h, uint16_t colour) {
     if (y + h > LCD_H) h = LCD_H - y;
     if (w <= 0 || h <= 0) return;
     lcd_push_wait();
+    colour = look_565(colour, look_now);   // (test 17)
     colour = tone_565(colour);
     for (int i = 0; i < w; i++) line[i] = colour;
     window(x, y, w, h);
@@ -228,6 +236,7 @@ void lcd_text(int x, int y, const char *s, int scale, uint16_t fg, uint16_t bg) 
     lcd_push_wait();
     if (scale < 1) scale = 1;
     if (scale > 8) scale = 8;
+    fg = look_565(fg, look_now), bg = look_565(bg, look_now);   // (test 17)
     fg = tone_565(fg);
     bg = tone_565(bg);
     const int cw = 6 * scale, ch = 8 * scale;
