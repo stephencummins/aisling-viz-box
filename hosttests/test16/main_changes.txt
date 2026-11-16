@@ -1,0 +1,15 @@
+> #include "strip.h"
+< #define CELL_W   (LCD_W / 8)
+<                 int cell = y >= STRIP_Y && !knob && !guest_page(&gu) ? x / CELL_W : -1;   // nor its strip pieces
+>                 int cell = y >= STRIP_Y && !knob && !guest_page(&gu) ? strip_cell(x) : -1;   // nor its strip pieces
+<     for (int i = 0; i < 8; i++) {
+<         int x = i * CELL_W;
+>     for (int i = 0; i < STRIP_N; i++) {
+>         int x = strip_x(i), cw = STRIP_CW[i];
+<         lcd_fill_rect(x, STRIP_Y, CELL_W, STRIP_H, bg);
+>         lcd_fill_rect(x, STRIP_Y, cw, STRIP_H, bg);
+<         lcd_text(x + (CELL_W - w + 1) / 2, STRIP_Y + 8, name, 1, fg, bg);
+>         lcd_text(x + (cw - w + 1) / 2, STRIP_Y + 8, name, 1, fg, bg);
+<         lcd_text(x + (CELL_W - w + 1) / 2, STRIP_Y + 21, bpm, 1, fg2, bg);
+>         lcd_text(x + (cw - w + 1) / 2, STRIP_Y + 21, bpm, 1, fg2, bg);
+>     lcd_fill_rect(STRIP_W, STRIP_Y, LCD_W - STRIP_W, STRIP_H, C_BLACK);   // (test 16) under the brick: nothing
