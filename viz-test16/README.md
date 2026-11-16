@@ -1,6 +1,6 @@
 # viz-test16: the strip moved in from the right edge
 
-**Written, host-checked and built for the board 16 Nov 2026; not on it, untried.** Test 15 with the strip of
+**On the board since 16 Nov 2026 (the 144 MHz build below, loaded with picotool from the bootloader, over test 15, and verified); the strip not yet looked at in the tray.** Test 15 with the strip of
 pieces stopping short of the screen's right edge, and nothing else.
 
 Why: in the Lego tray a brick on the right covers the screen's last few pixels. Up to test 15 the strip is eight
@@ -44,5 +44,6 @@ As test 8's (see test 12's README), with the ARM compiler on the path
 
 ## Not tried
 
-All of it, on the board. Test 15 is on the board. A fault seen with this build that test 15 doesn't show is the
+The strip itself, by eye and by finger in the tray. After the load the box came back as "AISLING viz test 16", found
+the FM-1 and the card, and its settings file matched. A fault seen with this build that test 15 doesn't show is the
 strip's. Each earlier README's own "not tried" list still stands.
