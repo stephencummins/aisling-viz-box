@@ -1,6 +1,7 @@
 # viz-test14: the card and any firmware, in one build
 
-**Merged, host-checked and built for the board 15 Nov 2026; not on it, untried.** Test 12 (the settings on a
+**Merged, host-checked and built for the board 15 Nov 2026. It was on the board that day, until test 15 replaced
+it; what was tried on it is not written down here.** Test 12 (the settings on a
 microSD card, and the card as a USB drive) and test 13 (an FM-1 that isn't running AISLING) were each written on
 test 11, apart. This is the two together, and nothing else: there is no new code in it.
 
