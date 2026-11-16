@@ -19,6 +19,7 @@
 #include "sd.h"
 #include "msc.h"
 #include "card.h"
+#include "ui.h"
 
 static FATFS fs;
 static int state = CARD_NONE;
@@ -123,12 +124,12 @@ int card_take_back(void) {
 #define NEWS_Y  196   // scale 2, two lines
 #define BTN_Y   264
 #define BTN_H   (LCD_H - BTN_Y)
-#define BTN_W   (LCD_W / CARD_BUTTONS)
+#define BTN_X(b) ui_col(b, CARD_BUTTONS)   // (test 18) the three buttons across UI_W: 154 or 155 wide
 
-// One line, in capitals, the screen's width (the rest spaces, so it covers what was there).
+// One line, in capitals, the usable width (ui.h; the rest spaces, so it covers what was there).
 static void put(int y, int scale, uint16_t fg, const char *s) {
     char u[96];
-    int room = LCD_W / (6 * scale), k = 0;
+    int room = UI_W / (6 * scale), k = 0;
     if (room > (int)sizeof u - 1) room = (int)sizeof u - 1;
     for (; s[k] && k < room; k++) u[k] = (char)toupper((unsigned char)s[k]);
     for (; k < room; k++) u[k] = ' ';
@@ -148,7 +149,7 @@ static void putf(int y, int scale, uint16_t fg, const char *fmt, ...) {
 
 // Two lines at scale 2, broken at a space.
 static void put_two(int y, uint16_t fg, const char *s) {
-    int room = LCD_W / 12, n = (int)strlen(s), cut = n;
+    int room = UI_W / 12, n = (int)strlen(s), cut = n;
     if (n > room) {
         cut = room;
         while (cut > 0 && s[cut] != ' ') cut--;
@@ -179,15 +180,15 @@ static const char *button_name(int b) {
 }
 
 static void draw_button(int b, bool down) {
-    int x = b * BTN_W;
+    int x = BTN_X(b), w = BTN_X(b + 1) - x;
     bool on = live(b);
     uint16_t frame = on ? C_WHITE : C_GREY;
     uint16_t bg = down && on ? C_WHITE : C_BLACK, fg = down && on ? C_BLACK : frame;
     const char *s = button_name(b);
-    lcd_fill_rect(x, BTN_Y, BTN_W, BTN_H, frame);
-    lcd_fill_rect(x + 2, BTN_Y + 2, BTN_W - 4, BTN_H - 4, bg);
+    lcd_fill_rect(x, BTN_Y, w, BTN_H, frame);
+    lcd_fill_rect(x + 2, BTN_Y + 2, w - 4, BTN_H - 4, bg);
     int tw = (int)strlen(s) * 12;
-    lcd_text(x + (BTN_W - tw + 1) / 2, BTN_Y + (BTN_H - 16) / 2, s, 2, fg, bg);
+    lcd_text(x + (w - tw + 1) / 2, BTN_Y + (BTN_H - 16) / 2, s, 2, fg, bg);
 }
 
 static int count_bits(unsigned v) {
@@ -206,7 +207,7 @@ static void draw_counts(void) {
 void card_draw_info(void) {
     char s[64];
     snprintf(s, sizeof s, "SD SPI %u MHZ", (unsigned)(SD_FAST_HZ / 1000000u));
-    putf(TITLE_Y, 1, C_WHITE, "AISLING VIZ TEST 18: THE CARD%*s", LCD_W / 6 - 29, s);
+    putf(TITLE_Y, 1, C_WHITE, "AISLING VIZ TEST 18: THE CARD%*s", UI_W / 6 - 29, s);
     uint16_t big = state == CARD_OK ? C_WHITE : state == CARD_NONE ? C_GREY : C_ORANGE;
     put(STATE_Y, 3, big, card_state_name(state));
 
@@ -282,9 +283,10 @@ void card_draw_counts(void) {
 }
 
 int card_button_at(int x, int y) {
-    if (y < BTN_Y || x < 0) return -1;
-    int b = x / BTN_W;
-    return b >= CARD_BUTTONS ? CARD_BUTTONS - 1 : b;
+    if (y < BTN_Y || x < 0 || ui_off(x)) return -1;   // (test 18) under the brick: nobody's
+    int b = 0;
+    while (b < CARD_BUTTONS - 1 && x >= BTN_X(b + 1)) b++;
+    return b;
 }
 
 void card_press_show(int b) {

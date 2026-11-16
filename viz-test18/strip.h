@@ -9,9 +9,10 @@
 // Pure, so the host checks can build it: no screen, no touch.
 #ifndef VIZ_STRIP_H
 #define VIZ_STRIP_H
+#include "ui.h"
 
 #define STRIP_N 8
-#define STRIP_W 464   // of LCD_W's 480
+#define STRIP_W UI_W   // (test 18) 464 of LCD_W's 480: now every page's, so it is ui.h's
 
 //                                  SKELLIG BURREN ARAN CAROLAN BLASKET SAMHAIN CONNEMARA TIR NA NOG
 static const unsigned char STRIP_CW[STRIP_N] = {56, 54, 50, 56, 56, 58, 64, 70};

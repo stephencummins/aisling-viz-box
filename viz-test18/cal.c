@@ -10,9 +10,11 @@
 #include "lcd.h"
 #include "tone.h"
 #include "look.h"
+#include "ui.h"
 #include "cal.h"
 
-#define BTN_W (LCD_W / 5)
+// (test 18) Everything on this page is laid out across UI_W, not the screen: the ramps, the swatches, the buttons.
+#define BTN_X(c) ui_col(c, 5)   // the five columns of buttons: 92 or 93 wide
 #define BTN_H 32
 
 #define INFO_Y    1
@@ -30,9 +32,10 @@
 #define SWL_Y   198
 #define SAMPLE_Y 212
 #define SAMPLE_H 36
-#define CARD_X  384   // (test 12) the CARD button, right of the samples
-#define CARD_W   96
-#define LOOK_X  288   // (test 17) the LOOK button, between the samples and CARD
+#define NOTE_X  186   // the status line's sample and the look's name, right of the three cells
+#define LOOK_X  280   // (test 17) the LOOK button, between the samples and CARD
+#define CARD_X  372   // (test 12) the CARD button, right of it, to UI_W
+#define CARD_W  (UI_W - CARD_X)
 
 static const char *BTN_NAME[CAL_BUTTONS] = {"WARM -", "WARM +", "VRH -", "VRH +", "START",
                                             "GAMMA", "FIELD", "VAL -", "VAL +", "LAND"};
@@ -116,7 +119,8 @@ void cal_describe(char *out, size_t n) {
 
 static uint16_t rgb24(uint32_t c) { return RGB((c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF); }
 
-static int x64(int i) { return i * LCD_W / 64; }
+static int x64(int i) { return ui_col(i, 64); }
+static int x32(int i) { return ui_col(i, 32); }
 
 // Grey level i of 64: green carries 6 bits, red and blue 5.
 static uint16_t grey64(int i) { return (uint16_t)(((i >> 1) << 11) | (i << 5) | (i >> 1)); }
@@ -127,7 +131,7 @@ static void text_centred(int x, int w, int y, const char *s, int scale, uint16_t
 }
 
 static void draw_button(int b, bool down) {
-    int x = (b % 5) * BTN_W, y = CAL_BTN_Y + (b / 5) * BTN_H, w = BTN_W, h = BTN_H;
+    int x = BTN_X(b % 5), y = CAL_BTN_Y + (b / 5) * BTN_H, w = BTN_X(b % 5 + 1) - x, h = BTN_H;
     const char *name = b == CAL_CARD ? "CARD" : b == CAL_LOOK ? "LOOK" : BTN_NAME[b];
     if (b == CAL_CARD) x = CARD_X, y = SAMPLE_Y, w = CARD_W, h = SAMPLE_H;
     if (b == CAL_LOOK) name = "LOOK", x = LOOK_X, y = SAMPLE_Y, w = CARD_X - LOOK_X, h = SAMPLE_H;   // (test 17)
@@ -138,7 +142,7 @@ static void draw_button(int b, bool down) {
 }
 
 static void draw_marker(void) {
-    lcd_fill_rect(0, MARK_Y, LCD_W, MARK_H, C_BLACK);
+    lcd_fill_rect(0, MARK_Y, UI_W, MARK_H, C_BLACK);
     for (int i = 0; i < PANEL_GAMMA_FIELDS; i++) {
         int lv = PANEL_GAMMA_LEVEL[i], x = x64(lv), w = x64(lv + 1) - x;
         if (i == field) lcd_fill_rect(x, MARK_Y, w, MARK_H, C_WHITE);
@@ -149,7 +153,7 @@ static void draw_marker(void) {
 void cal_draw_info(void) {
     char line[192], s[32];
     snprintf(s, sizeof s, "SPI %lu MHZ", (unsigned long)(lcd_hz() / 1000000));
-    snprintf(line, sizeof line, "AISLING VIZ TEST 18: PANEL CALIBRATION%*s", LCD_W / 6 - 38, s);
+    snprintf(line, sizeof line, "AISLING VIZ TEST 18: PANEL CALIBRATION%*s", UI_W / 6 - 38, s);
     lcd_text(0, INFO_Y, line, 1, C_WHITE, C_BLACK);
 
     const panel_t *p = lcd_panel();
@@ -173,7 +177,7 @@ void cal_draw_info(void) {
     else
         snprintf(c, sizeof c, "GAMMA CHIP (FIELD VP%d)", vp);
     int k = snprintf(line, sizeof line, "WARM %d/%d  %s  %s  %s", tone_step(), TONE_STEPS - 1, a, b, c);
-    int room = LCD_W / 6;
+    int room = UI_W / 6;
     if (k > room) k = room;
     if (k < room) memset(line + k, ' ', (size_t)(room - k));
     line[room] = 0;
@@ -213,32 +217,32 @@ void cal_draw(void) {
         char t[4];
         snprintf(t, sizeof t, "%d", TICKS[i]);
         int x = x64(TICKS[i]);
-        if (i == 4) x = LCD_W - 12;
+        if (i == 4) x = UI_W - 12;
         lcd_text(x, TICK_Y, t, 1, C_WHITE, C_BLACK);
     }
     lcd_look_set(LOOK_DARK);
     for (int i = 0; i < 32; i++) {
-        lcd_fill_rect(i * 15, R_Y, 15, RAMP_H, (uint16_t)(i << 11));
-        lcd_fill_rect(i * 15, B_Y, 15, RAMP_H, (uint16_t)i);
+        lcd_fill_rect(x32(i), R_Y, x32(i + 1) - x32(i), RAMP_H, (uint16_t)(i << 11));
+        lcd_fill_rect(x32(i), B_Y, x32(i + 1) - x32(i), RAMP_H, (uint16_t)i);
     }
     for (int i = 0; i < 64; i++) lcd_fill_rect(x64(i), G_Y, x64(i + 1) - x64(i), RAMP_H, (uint16_t)(i << 5));
 
     for (int i = 0; i < N_SWATCH; i++) {
-        int x = i * LCD_W / N_SWATCH, w = (i + 1) * LCD_W / N_SWATCH - x - 2;
+        int x = ui_col(i, N_SWATCH), w = ui_col(i + 1, N_SWATCH) - x - 2;
         lcd_fill_rect(x, SW_Y, w, SW_H, rgb24(SWATCH[i]));
     }
     lcd_look_set(look);
     static const char *GROUP[4] = {"DRONE", "SEQ", "LEAD", "SEQ 2"};
-    for (int g = 0; g < 4; g++) lcd_text(g * 4 * LCD_W / N_SWATCH, SWL_Y, GROUP[g], 1, C_WHITE, C_BLACK);
-    for (int i = 0; i < 6; i++) lcd_text((16 + i) * LCD_W / N_SWATCH, SWL_Y, SWATCH_LABEL[i], 1, C_WHITE, C_BLACK);
+    for (int g = 0; g < 4; g++) lcd_text(ui_col(g * 4, N_SWATCH), SWL_Y, GROUP[g], 1, C_WHITE, C_BLACK);
+    for (int i = 0; i < 6; i++) lcd_text(ui_col(16 + i, N_SWATCH), SWL_Y, SWATCH_LABEL[i], 1, C_WHITE, C_BLACK);
 
     // The strip and status line as test 2 draws them.
     draw_sample_cell(0, "SKELLIG", "76 BPM", RGB(26, 22, 30), C_VELLUM, RGB(150, 140, 125));
     draw_sample_cell(60, "BURREN", "84 BPM", C_ORANGE, C_BLACK, C_BLACK);
     draw_sample_cell(120, "ARAN", "96 BPM", RGB(40, 34, 46), C_VELLUM, RGB(150, 140, 125));
-    lcd_text(190, SAMPLE_Y + 6, "FM-1 OK", 1, C_GREEN, C_BLACK);
-    lcd_text(238, SAMPLE_Y + 6, " 96 BPM", 1, C_GREY, C_BLACK);   // (test 17) shorter: LOOK is to their right
-    lcd_text(190, SAMPLE_Y + 22, look == LOOK_LIGHT ? "INK ON WHITE   " : "VELLUM ON BLACK", 1, C_VELLUM, C_BLACK);
+    lcd_text(NOTE_X, SAMPLE_Y + 6, "FM-1 OK", 1, C_GREEN, C_BLACK);
+    lcd_text(NOTE_X + 48, SAMPLE_Y + 6, " 96 BPM", 1, C_GREY, C_BLACK);   // (test 17) shorter: LOOK is to their right
+    lcd_text(NOTE_X, SAMPLE_Y + 22, look == LOOK_LIGHT ? "INK ON WHITE   " : "VELLUM ON BLACK", 1, C_VELLUM, C_BLACK);
 
     for (int b = 0; b < CAL_BUTTONS; b++) draw_button(b, b == pressed);
     draw_button(CAL_CARD, pressed == CAL_CARD);
@@ -248,12 +252,13 @@ void cal_draw(void) {
 // ---------------------------------------------------------------- buttons
 
 int cal_button_at(int x, int y) {
+    if (ui_off(x)) return -1;   // (test 18) under the brick: nobody's
     if (x >= CARD_X && y >= SAMPLE_Y && y < SAMPLE_Y + SAMPLE_H) return CAL_CARD;
     if (x >= LOOK_X && y >= SAMPLE_Y && y < SAMPLE_Y + SAMPLE_H) return CAL_LOOK;   // (test 17)
     if (y < CAL_BTN_Y || x < 0) return -1;
-    int r = (y - CAL_BTN_Y) / BTN_H, c = x / BTN_W;
+    int r = (y - CAL_BTN_Y) / BTN_H, c = 0;
     if (r > 1) r = 1;
-    if (c > 4) c = 4;
+    while (c < 4 && x >= BTN_X(c + 1)) c++;
     return r * 5 + c;
 }
 

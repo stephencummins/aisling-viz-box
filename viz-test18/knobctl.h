@@ -28,10 +28,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "fm1scr.h"
+#include "ui.h"
 
 #define KC_ROW_Y0 80          // the knob row: y 80-141 (the knobs and the rule under them)
 #define KC_ROW_Y1 142
-#define KC_CELL_W 120
+#define KC_CELL_W (UI_W / 4)   // (test 18) 116: four knobs across the usable width (120 up to test 17)
 #define KC_START_PX 10        // a touch in the row moves this far before it's a drag
 #define KC_TRAVEL_PX 300      // the whole of a knob's range, about (each step 3 to 24 px)
 #define KC_STEP_MIN 3

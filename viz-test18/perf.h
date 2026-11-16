@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "pflash.h"
+#include "ui.h"
 
 #define PERF_BOTTOM 272                 // the pages' area: y 0 .. 271 (the status row and the strip stay)
 #define PERF_VIEW   17                  // PERFORM in fm1scr.c's pages: its four knobs are the pad's
@@ -22,13 +23,18 @@
 // the effects page: 5 x 6 cells, 27 effects and three buttons
 #define FX_COLS 5
 #define FX_ROWS 6
-#define FX_CW   96
+#define FX_CW   92                      // (test 18) a column: four of 92 and one of 96 are UI_W, not five of 96
+#define FX_WIDE_COL 1                   // ... the second is the 96: SHIMMER, 91 across in the uncial hand, is in it
+#define FX_WIDE 96
+#define FX_X(c) ((c) * FX_CW + ((c) > FX_WIDE_COL ? FX_WIDE - FX_CW : 0))   // column c's left edge (c = FX_COLS: the end)
+_Static_assert(FX_X(FX_COLS) == UI_W, "the effects' columns are the usable width");
 #define FX_CH   45
 #define FX_CELLS (FX_COLS * FX_ROWS)
 enum { FXB_ALLOFF = -2, FXB_PAD = -3, FXB_LAND = -4 };   // a cell that isn't an effect (-1: nothing)
 
 // the pad page: the pad left, five buttons right
-#define XY_PAD_W 384
+#define XY_BTN_W 96                     // (test 18) the buttons keep their width and end at UI_W; the pad gives up 16
+#define XY_PAD_W (UI_W - XY_BTN_W)      // 368 (384 up to test 17)
 #define XY_MARGIN 16                    // the pad's ends are this far in, so a finger reaches them
 #define XY_BTN_H 54
 enum { XYB_X, XYB_Y, XYB_RESET, XYB_FX, XYB_LAND, XY_BTNS };

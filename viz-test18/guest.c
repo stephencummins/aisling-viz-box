@@ -4,6 +4,7 @@
 #include <string.h>
 #include "guest.h"
 #include "lcd.h"
+#include "ui.h"
 
 #define D_HEAD 1u
 #define D_NOW  2u
@@ -21,9 +22,9 @@
 #define RULE2_Y  196
 #define HIST_Y   202          // GUEST_HIST lines of 10, and one of heading: to y 271
 #define MARGIN   6
-#define BIG_W    26           // characters across at scale 3: (480 - 12) / 18
-#define BIG_ROWS 6            // 6 x 26 px
-#define MID_W    39           // at scale 2: (480 - 12) / 12
+#define BIG_W    ((UI_W - 2 * MARGIN) / 18)   // (test 18) characters across at scale 3: 25 in 464 (26 in 480)
+#define BIG_ROWS 6            // 6 rows of 26 px
+#define MID_W    ((UI_W - 2 * MARGIN) / 12)   // at scale 2: 37 (39 in 480)
 #define MID_ROWS 9            // 9 x 18 px
 
 void guest_init(guest_t *g) {
@@ -205,8 +206,9 @@ static void draw_head(const guest_t *g) {
     snprintf(l, sizeof l, "%s", g->who == WHO_SILENT ? "NOT AISLING" : g->name[0] ? g->name : "(NO NAME)");
     lcd_text(MARGIN, HEAD_Y, l, 2, C_ORANGE, BG);
     const char *r = g->who == WHO_SILENT ? "NO SCREEN READER IN IT" : "WHAT ITS SCREEN SAYS";
-    lcd_text(LCD_W - MARGIN - (int)strlen(r) * 6, HEAD_Y + 6, r, 1, DIM, BG);
-    lcd_fill_rect(0, RULE1_Y, LCD_W, 1, RULE);
+    lcd_text(UI_W - MARGIN - (int)strlen(r) * 6, HEAD_Y + 6, r, 1, DIM, BG);   // (test 18) to the usable edge
+    lcd_fill_rect(0, RULE1_Y, UI_W, 1, RULE);
+    lcd_fill_rect(UI_W, RULE1_Y, LCD_W - UI_W, 1, BG);   // (test 18) the rule ends at the usable edge
     lcd_fill_rect(0, RULE1_Y + 1, LCD_W, BODY_Y - RULE1_Y - 1, BG);
 }
 
@@ -235,7 +237,8 @@ static void draw_now(guest_t *g) {
 
 static void draw_hist(const guest_t *g) {
     lcd_fill_rect(0, BODY_Y + BODY_H, LCD_W, RULE2_Y - BODY_Y - BODY_H, BG);
-    lcd_fill_rect(0, RULE2_Y, LCD_W, 1, RULE);
+    lcd_fill_rect(0, RULE2_Y, UI_W, 1, RULE);
+    lcd_fill_rect(UI_W, RULE2_Y, LCD_W - UI_W, 1, BG);   // (test 18) the rule ends at the usable edge
     lcd_fill_rect(0, RULE2_Y + 1, LCD_W, HIST_Y - RULE2_Y - 1, BG);
     line(HIST_Y, g->n_hist ? "BEFORE THAT" : "", 1, GUEST_HIST_W, RULE);
     for (int i = 0; i < GUEST_HIST; i++) line(HIST_Y + 10 + i * 10, i < g->n_hist ? g->hist[i] : "", 1, GUEST_HIST_W, DIM);

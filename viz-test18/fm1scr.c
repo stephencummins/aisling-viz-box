@@ -5,6 +5,7 @@
 #include "fm1scr.h"
 #include "lcd.h"
 #include "pflash.h"
+#include "ui.h"
 
 // ---- AISLING's names (ui.c: VIEW_NAME, KNOB_LABEL, CHORD_Q), in its order ----
 
@@ -556,6 +557,13 @@ void fm1scr_tick(fm1scr_t *m, uint32_t now) {
 #define KBAR_Y 133                // (test 7) the bar under a value being sent
 #define KBAR_H 3
 #define KBAR_W 108
+// (test 18) The page is UI_W across, not the screen: its boxes tile y 0-271 of x 0 to UI_W, and the 16 pixels right
+// of that are filled once, with the rules. A knob's cell is 116, not 120; its lettering keeps its 108 (nine letters
+// at scale 2: ECHO TIME, TRANSPOSE), 4 in from each side.
+#define PAGE_W UI_W
+#define KNOB_W (UI_W / 4)
+#define KNOB_PAD ((KNOB_W - KBAR_W) / 2)
+#define HEAD_R 126   // PLAYING, NOT SAVED: nine letters at scale 2 and the sides
 
 enum { AL_L, AL_R, AL_C };
 
@@ -603,11 +611,12 @@ void fm1scr_draw_flash(int k) {
     char t[81];
     uint16_t c = PFLASH[k].col;
     fm1scr_caps(t, PFLASH[k].name, 80);
-    int sc = fit((int)strlen(t), LCD_W - 32, PF_NAME_MAX);
+    int sc = fit((int)strlen(t), PAGE_W - 32, PF_NAME_MAX);
     int top = (FM1SCR_BOTTOM - (8 * sc + PF_GAP + 8 * PF_LINE)) / 2, mid = top + 8 * sc + PF_GAP;
-    box_text(0, 0, LCD_W, mid, top, 16, t, sc, AL_C, C_BLACK, c);
+    box_text(0, 0, PAGE_W, mid, top, 16, t, sc, AL_C, C_BLACK, c);
     fm1scr_caps(t, PFLASH[k].line, 80);
-    box_text(0, mid, LCD_W, FM1SCR_BOTTOM - mid, 0, 16, t, PF_LINE, AL_C, C_BLACK, c);
+    box_text(0, mid, PAGE_W, FM1SCR_BOTTOM - mid, 0, 16, t, PF_LINE, AL_C, C_BLACK, c);
+    fill(PAGE_W, 0, LCD_W - PAGE_W, FM1SCR_BOTTOM, c);   // (test 18) the colour to the edge, the lettering not
 }
 
 // The same, in capitals (but a flat's b), at the largest scale up to max that fits, centred in the box's height.
@@ -624,8 +633,8 @@ static void draw_head(fm1scr_t *m) {
         uint16_t c = m->warn ? C_RED : FG;
         fm1scr_caps(a, m->msg, 95);
         int n = (int)strlen(a);
-        if (n <= 25) {   // (25 at scale 3 is 450 pixels: with the sides, the most that fits 480)
-            box_text(0, 0, LCD_W, 44, 10, 8, a, 3, AL_L, c, BG);
+        if (n <= 25) {   // (25 at scale 3 is 450 pixels: with the sides, the most that fits 464)
+            box_text(0, 0, PAGE_W, 44, 10, 6, a, 3, AL_L, c, BG);
             return;
         }
         int cut = n > 38 ? 38 : n;   // two lines at scale 2, broken at a space
@@ -635,13 +644,13 @@ static void draw_head(fm1scr_t *m) {
         memcpy(b, a, (size_t)cut);
         b[cut] = 0;
         const char *rest = a + cut + (a[cut] == ' ');
-        box_text(0, 0, LCD_W, 22, 4, 8, b, 2, AL_L, c, BG);
-        box_text(0, 22, LCD_W, 22, 2, 8, rest, 2, AL_L, c, BG);
+        box_text(0, 0, PAGE_W, 22, 4, 4, b, 2, AL_L, c, BG);   // (38 at scale 2 is 456)
+        box_text(0, 22, PAGE_W, 22, 2, 4, rest, 2, AL_L, c, BG);
         return;
     }
     fm1scr_caps(a, m->piece, 40);
-    box_text(0, 0, 330, 22, 4, 8, a, 2, AL_L, FG, BG);
-    box_text(330, 0, 150, 22, 4, 8, m->playing == 1 ? "PLAYING" : m->playing == 0 ? "RESTING" : "", 2, AL_R,
+    box_text(0, 0, PAGE_W - HEAD_R, 22, 4, 8, a, 2, AL_L, FG, BG);
+    box_text(PAGE_W - HEAD_R, 0, HEAD_R, 22, 4, 8, m->playing == 1 ? "PLAYING" : m->playing == 0 ? "RESTING" : "", 2, AL_R,
              m->playing == 1 ? PLAYING : LABEL, BG);
     b[0] = 0;
     if (m->root[0] || m->mode[0] || m->tempo[0]) {
@@ -664,42 +673,42 @@ static void draw_head(fm1scr_t *m) {
         k[n] = 0;
         fm1scr_caps(b, k, 40);
     }
-    box_text(0, 22, 330, 22, 2, 8, b, 2, AL_L, C_VELLUM, BG);
-    box_text(330, 22, 150, 22, 2, 8, m->unsaved == 1 ? "NOT SAVED" : "", 2, AL_R, C_ORANGE, BG);
+    box_text(0, 22, PAGE_W - HEAD_R, 22, 2, 8, b, 2, AL_L, C_VELLUM, BG);
+    box_text(PAGE_W - HEAD_R, 22, HEAD_R, 22, 2, 8, m->unsaved == 1 ? "NOT SAVED" : "", 2, AL_R, C_ORANGE, BG);
 }
 
 static void draw_page(fm1scr_t *m) {
     char a[48];
     fm1scr_caps(a, m->view >= 0 ? VIEW_NAME[m->view] : "", 40);
     box_text(0, 46, 214, 34, 5, 8, a, 3, AL_L, C_ORANGE, BG);
-    box_caps(214, 46, 266, 34, 8, m->detail, 2, AL_R, C_VELLUM);
+    box_caps(214, 46, PAGE_W - 214, 34, 4, m->detail, 2, AL_R, C_VELLUM);
 }
 
 // A knob: its label (dimmed if the box can't turn it, test 7), its value, or (test 7) the value the box is sending,
 // with a bar under it for where that is in the knob's range.
 static void draw_knob(fm1scr_t *m, int i) {
-    int x = i * 120;
+    int x = i * KNOB_W;
     bool on = m->view >= 0 && m->value[i][0];
     bool pv = on && m->pv[i];
     char a[32];
     fm1scr_caps(a, on ? KNOB_LABEL[m->view][i] : "", 30);
-    box_text(x, 80, 120, 22, 4, 6, a, 2, AL_L, on && (m->locked >> i & 1u) ? DIM : LABEL, BG);
+    box_text(x, 80, KNOB_W, 22, 4, KNOB_PAD, a, 2, AL_L, on && (m->locked >> i & 1u) ? DIM : LABEL, BG);
     fm1scr_caps(a, pv ? m->pv[i] : on ? m->value[i] : "", 30);
-    int sc = fit((int)strlen(a), 108, 3);
+    int sc = fit((int)strlen(a), KNOB_W - 2 * KNOB_PAD, 3);
     uint16_t fg = pv || m->turned == i ? C_ORANGE : FG;
     if (!pv) {
-        box_text(x, 102, 120, 38, 4 + (3 - sc) * 4, 6, a, sc, AL_L, fg, BG);
+        box_text(x, 102, KNOB_W, 38, 4 + (3 - sc) * 4, KNOB_PAD, a, sc, AL_L, fg, BG);
         return;
     }
     // y 133-135 the bar: below the value's 24 rows at the largest scale (106-129), above the rule at 140. The value's
     // box stops above it, and the bar's row is filled once, so nothing is drawn twice.
-    box_text(x, 102, 120, KBAR_Y - 102, 4 + (3 - sc) * 4, 6, a, sc, AL_L, fg, BG);
+    box_text(x, 102, KNOB_W, KBAR_Y - 102, 4 + (3 - sc) * 4, KNOB_PAD, a, sc, AL_L, fg, BG);
     int n = m->pv_n[i], w = n > 1 && m->pv_idx[i] < n ? (KBAR_W * m->pv_idx[i] + (n - 1) / 2) / (n - 1) : 0;
-    fill(x, KBAR_Y, 6, KBAR_H, BG);
-    fill(x + 6, KBAR_Y, w, KBAR_H, C_ORANGE);
-    fill(x + 6 + w, KBAR_Y, KBAR_W - w, KBAR_H, BAR_OFF);
-    fill(x + 6 + KBAR_W, KBAR_Y, 120 - 6 - KBAR_W, KBAR_H, BG);
-    fill(x, KBAR_Y + KBAR_H, 120, 140 - KBAR_Y - KBAR_H, BG);
+    fill(x, KBAR_Y, KNOB_PAD, KBAR_H, BG);
+    fill(x + KNOB_PAD, KBAR_Y, w, KBAR_H, C_ORANGE);
+    fill(x + KNOB_PAD + w, KBAR_Y, KBAR_W - w, KBAR_H, BAR_OFF);
+    fill(x + KNOB_PAD + KBAR_W, KBAR_Y, KNOB_W - KNOB_PAD - KBAR_W, KBAR_H, BG);
+    fill(x, KBAR_Y + KBAR_H, KNOB_W, 140 - KBAR_Y - KBAR_H, BG);
 }
 
 // "Fm7", as the FM-1 shows the chord ("F minor 7" said); one it doesn't know, in capitals as said.
@@ -721,41 +730,42 @@ static void chord_symbol(const char *chord, char *out, int max) {
 static void draw_chord(fm1scr_t *m) {
     char a[48];
     chord_symbol(m->chord, a, 40);
-    int sc = fit((int)strlen(a), 284, 4);
-    box_text(0, 142, 300, 44, (44 - 8 * sc) / 2, 8, a, sc, AL_L, FG, BG);
-    box_caps(300, 142, 180, 44, 8, m->section, 3, AL_R, C_VELLUM);
+    int sc = fit((int)strlen(a), PAGE_W - 180 - 16, 4);
+    box_text(0, 142, PAGE_W - 180, 44, (44 - 8 * sc) / 2, 8, a, sc, AL_L, FG, BG);
+    box_caps(PAGE_W - 180, 142, 180, 44, 8, m->section, 3, AL_R, C_VELLUM);
 }
 
+#define NEXT_W (PAGE_W - 136 - 76)   // between NEXT CHORD and the percentage: the bar, or HOLD
 static void draw_next(fm1scr_t *m) {
     bool known = m->chord[0] && (m->hold > 0 || m->next_pct >= 0);
     box_text(0, 186, 136, 24, 4, 8, known ? "NEXT CHORD" : "", 2, AL_L, LABEL, BG);
     if (m->hold > 0 || m->next_pct < 0) {
-        box_text(136, 186, 268, 24, 4, 4, m->hold == 1 ? "HOLD" : m->hold == 2 ? "HELD" : "", 2, AL_L,
+        box_text(136, 186, NEXT_W, 24, 4, 4, m->hold == 1 ? "HOLD" : m->hold == 2 ? "HELD" : "", 2, AL_L,
                  m->hold == 1 ? C_ORANGE : LABEL, BG);
-        box_text(404, 186, 76, 24, 4, 8, "", 2, AL_R, FG, BG);
+        box_text(136 + NEXT_W, 186, 76, 24, 4, 8, "", 2, AL_R, FG, BG);
         return;
     }
-    const int bx = 140, by = 192, bw = 260, bh = 12, on = bw * m->next_pct / 100;
-    fill(136, 186, 268, by - 186, BG);
-    fill(136, by + bh, 268, 186 + 24 - by - bh, BG);
+    const int bx = 140, by = 192, bw = NEXT_W - 8, bh = 12, on = bw * m->next_pct / 100;
+    fill(136, 186, NEXT_W, by - 186, BG);
+    fill(136, by + bh, NEXT_W, 186 + 24 - by - bh, BG);
     fill(136, by, bx - 136, bh, BG);
-    fill(bx + bw, by, 136 + 268 - bx - bw, bh, BG);
+    fill(bx + bw, by, 136 + NEXT_W - bx - bw, bh, BG);
     fill(bx, by, on, bh, C_ORANGE);
     fill(bx + on, by, bw - on, bh, BAR_OFF);
     char p[8] = {(char)('0' + m->next_pct / 100), (char)('0' + m->next_pct / 10 % 10),
                  (char)('0' + m->next_pct % 10), '%', 0};
     const char *ps = p;
     while (ps[0] == '0' && ps[1] != '%') ps++;
-    box_text(404, 186, 76, 24, 4, 8, ps, 2, AL_R, FG, BG);
+    box_text(136 + NEXT_W, 186, 76, 24, 4, 8, ps, 2, AL_R, FG, BG);
 }
 
 static void draw_line(fm1scr_t *m) {
-    box_caps(0, 212, LCD_W, 24, 8, m->view == V_SETUP && m->extra[0] ? m->extra : m->line, 2, AL_L, C_VELLUM);
+    box_caps(0, 212, PAGE_W, 24, 4, m->view == V_SETUP && m->extra[0] ? m->extra : m->line, 2, AL_L, C_VELLUM);
 }
 
 static void draw_scale(fm1scr_t *m) {
     box_text(0, 236, 96, 36, 10, 8, m->scale[0] ? "SCALE" : "", 2, AL_L, LABEL, BG);
-    box_caps(96, 236, LCD_W - 96, 36, 8, m->scale, 3, AL_L, FG);
+    box_caps(96, 236, PAGE_W - 96, 36, 4, m->scale, 3, AL_L, FG);
 }
 
 void fm1scr_draw(fm1scr_t *m, int conn, uint32_t now) {
@@ -768,15 +778,17 @@ void fm1scr_draw(fm1scr_t *m, int conn, uint32_t now) {
     m->dirty = 0;
     if (!d) return;
     if (!m->seen) {   // nothing heard yet
-        box_text(0, 0, LCD_W, FM1SCR_BOTTOM, 124, 8,
+        box_text(0, 0, PAGE_W, FM1SCR_BOTTOM, 124, 8,
                  conn == 0 ? "NO FM-1" : "WAITING FOR THE FM-1'S SCREEN READER", conn == 0 ? 3 : 2, AL_C,
                  conn == 0 ? C_ORANGE : LABEL, BG);
+        fill(PAGE_W, 0, LCD_W - PAGE_W, FM1SCR_BOTTOM, BG);
         return;
     }
     if (d & FM1_D_CLEAR) {   // the rules and the gap: the boxes tile everything else
-        fill(0, 44, LCD_W, 2, RULE);
-        fill(0, 140, LCD_W, 2, RULE);
-        fill(0, 210, LCD_W, 2, BG);
+        fill(0, 44, PAGE_W, 2, RULE);
+        fill(0, 140, PAGE_W, 2, RULE);
+        fill(0, 210, PAGE_W, 2, BG);
+        fill(PAGE_W, 0, LCD_W - PAGE_W, FM1SCR_BOTTOM, BG);   // (test 18) under the brick: nothing
     }
     if (d & FM1_D_HEAD) draw_head(m);
     if (d & FM1_D_PAGE) draw_page(m);

@@ -1,3 +1,13 @@
+// AISLING visualiser, test 18: test 17, with every one of the box's own pages kept clear of the screen's right edge.
+//
+// Test 18 (2026-11-16; Stephen, with test 17 on the box in its Lego tray: "Move the rest of UI slightly to the left
+// like you did with the bottom row"). Test 16 took the strip of pieces out from under the brick that covers the
+// screen's last 16 pixels on the right; this does the same for the rest. One number, UI_W (ui.h, 464), is the width
+// every page is laid out in: the status line, calibration, the effects, the pad, the FM-1's page and its knobs, a
+// guest's page and its two strip lines, the card's page. Nothing is written and no button reaches past it, and a
+// touch that begins past it is nobody's. The landscape is still the whole screen, and so is the flat colour of an
+// effect's flash (its lettering is centred in UI_W). Test 17's account, as it was written:
+//
 // AISLING visualiser, test 17: test 16, and a light look for the box's own pages.
 //
 // Test 17 (2026-11-16; Stephen, the day AISLING 1.4.1 gave the FM-1 its Screen: Dark or Light: "Can I also get the
@@ -928,6 +938,14 @@ static void perf_send(void) {
     status_due = true;
 }
 static bool land_touching;   // (test 10) this touch began on the landscape, above the status row
+static bool touch_off;       // (test 18) this touch is nobody's: nothing is done with it, or with its lift
+
+// (test 18) A touch that begins under the brick (ui.h) is nobody's, on every page but the landscape's picture,
+// which is the whole screen's width. (A touch that begins left of it and wanders there finds no button: each
+// page's own lookup says so.)
+static bool touch_begins_off(int x, int y) {
+    return ui_off(x) && !(screen == SCR_LAND && y < STATUS_Y);
+}
 static bool perf_touching;   // this touch began on the effects' or the pad's page, above the status row
 
 static void poll_touch(void) {
@@ -935,9 +953,13 @@ static void poll_touch(void) {
     if (touch_down()) {
         int x, y;
         if (touch_screen(&x, &y)) {
-            if (!touching) { touching = true; touch_reads = 0; touch_first_ms = now; }
+            if (!touching) { touching = true; touch_reads = 0; touch_first_ms = now; touch_off = touch_begins_off(x, y); }
             touch_reads++;
             touch_last_ms = now;
+            if (touch_off) {
+                if (log_touch) say("touch x %d y %d (nobody's)", x, y);
+                return;
+            }
             touch_y = y;
             if (screen == SCR_CAL) {
                 int b = cal_button_at(x, y);
@@ -975,6 +997,7 @@ static void poll_touch(void) {
     }
     if (touching && now - touch_last_ms >= 60) {
         touching = false;
+        if (touch_off) { touch_off = false; return; }
         bool ok = touch_reads >= 2;
         if (screen == SCR_CAL) {
             int b = touch_btn;
@@ -1019,9 +1042,11 @@ static void draw_strip(void) {
     char ga[80], gb[80];
     if (guest_strip(&gu, ga, gb)) {   // (test 13) not AISLING: the pieces aren't its, so what the box does instead
         uint16_t bg = RGB(26, 22, 30);
-        lcd_fill_rect(0, STRIP_Y, LCD_W, STRIP_H, bg);
-        lcd_text((LCD_W - (int)strlen(ga) * 6) / 2, STRIP_Y + 8, ga, 1, C_ORANGE, bg);
-        lcd_text((LCD_W - (int)strlen(gb) * 6) / 2, STRIP_Y + 21, gb, 1, RGB(150, 140, 125), bg);
+        ga[UI_W / 6] = gb[UI_W / 6] = 0;   // (test 18) 77 letters are the usable width; a longer line is cut
+        lcd_fill_rect(0, STRIP_Y, UI_W, STRIP_H, bg);
+        lcd_text((UI_W - (int)strlen(ga) * 6) / 2, STRIP_Y + 8, ga, 1, C_ORANGE, bg);
+        lcd_text((UI_W - (int)strlen(gb) * 6) / 2, STRIP_Y + 21, gb, 1, RGB(150, 140, 125), bg);
+        lcd_fill_rect(UI_W, STRIP_Y, LCD_W - UI_W, STRIP_H, C_BLACK);   // under the brick: nothing
         return;
     }
     for (int i = 0; i < STRIP_N; i++) {
@@ -1235,7 +1260,7 @@ static void draw_status(int fps) {
         n += snprintf(b + n, sizeof b - (size_t)n, "   ");
         n += perf_axis_text(&pf, 1, b + n, (int)sizeof b - n);
     }
-    int room = LCD_W / 6 - 8;
+    int room = UI_W / 6 - 8;   // (test 18) the status line ends by UI_W: 8 letters of state, then 69
     if (n > room) n = room;
     memset(b + n, ' ', (size_t)(room - n));
     b[room] = 0;

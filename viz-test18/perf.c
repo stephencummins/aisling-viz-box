@@ -65,8 +65,10 @@ int perf_fx_at(int cell) {
     return cell >= 0 && cell < FX_CELLS ? CELL[cell] : -1;
 }
 int perf_fx_cell_at(int x, int y) {
-    if (x < 0 || y < 0 || x >= FX_COLS * FX_CW || y >= FX_ROWS * FX_CH) return -1;
-    return y / FX_CH * FX_COLS + x / FX_CW;
+    if (x < 0 || y < 0 || x >= FX_X(FX_COLS) || y >= FX_ROWS * FX_CH) return -1;
+    int c = 0;
+    while (x >= FX_X(c + 1)) c++;   // (test 18) the columns aren't all one width
+    return y / FX_CH * FX_COLS + c;
 }
 int perf_fx_cc(int k) { return k < 0 || k >= PFLASH_N ? -1 : k < 12 ? 20 + k : 102 + k - 12; }
 int perf_slot_cc(int s) { return s < 0 || s >= PERF_NSLOT ? -1 : s < PFLASH_N ? perf_fx_cc(s) : PAD_CC[s - PFLASH_N]; }
@@ -277,7 +279,7 @@ void perf_fx_draw(perf_t *p) {
     }
     for (int c = 0; c < FX_CELLS; c++) {
         if (!(d >> c & 1u)) continue;
-        int x = c % FX_COLS * FX_CW + 1, y = c / FX_COLS * FX_CH + 1, w = FX_CW - 2, h = FX_CH - 2;
+        int x = FX_X(c % FX_COLS) + 1, y = c / FX_COLS * FX_CH + 1, w = FX_X(c % FX_COLS + 1) - x - 1, h = FX_CH - 2;
         int e = perf_fx_at(c);
         if (e >= 0) {
             uint16_t col = PFLASH[e].col;
@@ -342,7 +344,7 @@ static void pad_send(perf_t *p, int knob, int idx) {
         if (p->axis[a] == knob) p->xy_dirty |= XYD_BTN0 << a;
 }
 static int xy_btn_at(int x, int y) {
-    if (x < XY_PAD_W || x >= LCD_W || y < 0 || y >= PERF_BOTTOM) return -1;
+    if (x < XY_PAD_W || ui_off(x) || y < 0 || y >= PERF_BOTTOM) return -1;   // (test 18) not under the brick
     int b = y / XY_BTN_H;
     return b < XY_BTNS ? b : XY_BTNS - 1;
 }
@@ -483,7 +485,7 @@ int perf_axis_text(const perf_t *p, int a, char *out, int n) {
 }
 
 static void xy_button(const perf_t *p, int b) {
-    int x = XY_PAD_W + 1, y = b * XY_BTN_H + 1, w = LCD_W - XY_PAD_W - 2, h = XY_BTN_H - 2;
+    int x = XY_PAD_W + 1, y = b * XY_BTN_H + 1, w = XY_BTN_W - 2, h = XY_BTN_H - 2;
     bool pr = b == p->xy_press;
     uint16_t bg = pr ? C_GREY : b <= XYB_Y ? C_CELL : RGB(52, 44, 60);
     if (b > XYB_Y) {
