@@ -6,7 +6,10 @@
 // every page is laid out in: the status line, calibration, the effects, the pad, the FM-1's page and its knobs, a
 // guest's page and its two strip lines, the card's page. Nothing is written and no button reaches past it, and a
 // touch that begins past it is nobody's. The landscape is still the whole screen, and so is the flat colour of an
-// effect's flash (its lettering is centred in UI_W). Test 17's account, as it was written:
+// effect's flash (its lettering is centred in UI_W).
+// And the two-second hold for calibration is forgiving: it opens at the two-second mark with the finger still down
+// (hold_due, below), and on the landscape a touch is a drag 20 pixels from where it began, not 10 (perf.h), so a
+// held finger may roll and drift. Test 17's account, as it was written:
 //
 // AISLING visualiser, test 17: test 16, and a light look for the box's own pages.
 //
@@ -946,13 +949,33 @@ static bool touch_off;       // (test 18) this touch is nobody's: nothing is don
 static bool touch_begins_off(int x, int y) {
     return ui_off(x) && !(screen == SCR_LAND && y < STATUS_Y);
 }
+
 static bool perf_touching;   // this touch began on the effects' or the pad's page, above the status row
+
+// (test 18) The hold for calibration, made forgiving. It used to be judged when the finger came up: two seconds or
+// more between the first reading and the last, and the lift had to be a clean one. Now calibration opens at the
+// two-second mark with the finger still down, and that touch is spent: nothing more is done with it, and nothing
+// with its lift, until the finger has been up 60 ms (so it can't press a button of the page that has just come up).
+// What can be held is what could be before: the landscape (not once the touch is a drag: perf.h's LAND_TRAVEL_PX)
+// and the FM-1's page or a guest's (not a knob's touch, not the strip).
+static bool touch_spent;
+static uint32_t touch_spent_ms;   // its last reading
+static bool hold_due(uint32_t now) {
+    if (now - touch_first_ms < HOLD_MS || touch_y >= STATUS_Y || pressed_cell >= 0) return false;
+    if (screen == SCR_LAND) return land_touching && !pf.l_drag;
+    if (screen != SCR_FM1 || land_touching || perf_touching) return false;
+    return guest_page(&gu) || !(kc.in_row && !(kc.locked_press && !kc.moved));   // as knobctl_release says a knob's
+}
 
 static void poll_touch(void) {
     uint32_t now = to_ms_since_boot(get_absolute_time());
     if (touch_down()) {
         int x, y;
         if (touch_screen(&x, &y)) {
+            if (touch_spent) {   // (test 18) the finger that held for calibration, still down
+                touch_spent_ms = now;
+                return;
+            }
             if (!touching) { touching = true; touch_reads = 0; touch_first_ms = now; touch_off = touch_begins_off(x, y); }
             touch_reads++;
             touch_last_ms = now;
@@ -992,7 +1015,19 @@ static void poll_touch(void) {
                 if (cell != pressed_cell) { pressed_cell = cell; strip_dirty = true; }
                 if (log_touch) say("touch x %d y %d cell %d", x, y, cell);
             }
+            if (hold_due(now)) {   // (test 18) two seconds down: calibration now, and the touch is over
+                perf_land_release(&pf, false, may_send());
+                land_touching = touching = false;
+                touch_spent = true;
+                touch_spent_ms = now;
+                want_screen = SCR_CAL;
+                if (log_touch) say("held %u ms: calibration", (unsigned)(now - touch_first_ms));
+            }
         }
+        return;
+    }
+    if (touch_spent) {   // (test 18) up 60 ms: the next touch is a new one
+        if (now - touch_spent_ms >= 60) touch_spent = false;
         return;
     }
     if (touching && now - touch_last_ms >= 60) {

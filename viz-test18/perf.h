@@ -112,7 +112,9 @@ int perf_utext(int x, int y, const char *s, int size, uint16_t fg, uint16_t bg);
 // row, so one wild reading doesn't count) is a drag: across and up do what the pad's ACROSS and UP do, over the whole
 // picture. On 1.4 the first two effects held with an amount take the axes (none is let go); else the pad's two knobs.
 // Until it travels, nothing is sent: a tap still changes page and a hold still opens calibration.
-#define LAND_TRAVEL_PX 10
+// (test 18) 20, not 10: a finger held still for calibration rolls and drifts, and at 10 the hold became a drag and
+// was lost. A drag begins 20 from where the finger came down, and from there on is what it was.
+#define LAND_TRAVEL_PX 20
 void perf_land_touch(perf_t *p, int x, int y, bool first, bool live);
 bool perf_land_release(perf_t *p, bool ok, bool live);   // true: it was a drag, not a tap or a hold
 // What an axis is doing, for the status row: "ACROSS REVERB 62%" or "UP WET 30". Returns its length.
