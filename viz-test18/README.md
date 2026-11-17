@@ -1,7 +1,8 @@
 # viz-test18: every page clear of the brick, and a forgiving hold
 
-**On the board since 17 Nov 2026.** Stephen has seen the pages on it and is happy with the layout, and the
-two-second hold opens calibration by touch. Built and checked on the Mac on 16 Nov 2026. Test 17 with the box's own pages laid out
+**On the board since 17 Nov 2026, and tried by hand there.** Stephen has seen the pages on it and is happy with
+the layout; the two-second hold opens calibration by touch; a finger at the brick's edge, each page in both looks
+and a finger drifting during the hold all work. Built and checked on the Mac on 16 Nov 2026. Test 17 with the box's own pages laid out
 in 464 pixels, not 480, and the two-second hold for calibration made easier to do. Nothing else.
 
 Why: the Lego tray's brick covers the screen's last 16 pixels on the right. Test 16 moved the strip of pieces out
@@ -35,7 +36,7 @@ bottom row". And, the same evening, of the hold that opens calibration: "can't g
   lifted. A finger that slides there from a button lets the button go.
 - **The hold.** Calibration opens at the two-second mark with the finger still down (it was judged when the finger
   came up). That touch is then spent: nothing more is done with it or its lift. On the landscape a touch becomes a
-  drag 20 pixels from where it began, not 10; from there on it is a drag and never a hold. The 20 is a guess.
+  drag 20 pixels from where it began, not 10; from there on it is a drag and never a hold. The 20 began as a guess; on the board (17 Nov 2026) it works.
 - The nine files changed (`cal.c`, `card.c`, `fm1scr.c`, `guest.c`, `knobctl.h`, `main.c`, `perf.c`, `perf.h`,
   `strip.h`) differ from test 17's by the lines in `../hosttests/test18/changes.txt`: 91 out, 163 in. `ui.h` is new.
   Every other file is test 17's byte for byte (the titles and the USB name say 18).
@@ -101,7 +102,7 @@ As test 8's (see test 12's README), with the ARM compiler on the path
 
 ## Not tried
 
-On the board (17 Nov 2026) the layout has been looked at and the hold for calibration tried, and both are
-right. Nobody has yet tried, on purpose: a finger at the brick's edge (the last 16 pixels should do nothing), each
-page in both looks, or how far a finger may drift before the hold gives up (the 20 pixels is still a guess). Each
-earlier README's own "not tried" list still stands.
+Nothing of test 18's own is left untried. On the board (17 Nov 2026) Stephen looked at the layout, tried the hold
+for calibration, put a finger at the brick's edge, went through the pages in both looks and let a finger drift
+during the hold, and was happy with each. Those were tries by hand, not measurements: nobody measured how far the
+finger drifted. Each earlier README's own "not tried" list still stands.
