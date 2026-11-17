@@ -1,6 +1,7 @@
 # viz-test18: every page clear of the brick, and a forgiving hold
 
-**Not on the board. Built and checked on the Mac only (16 Nov 2026).** Test 17 with the box's own pages laid out
+**On the board since 17 Nov 2026.** Stephen has seen the pages on it and is happy with the layout, and the
+two-second hold opens calibration by touch. Built and checked on the Mac on 16 Nov 2026. Test 17 with the box's own pages laid out
 in 464 pixels, not 480, and the two-second hold for calibration made easier to do. Nothing else.
 
 Why: the Lego tray's brick covers the screen's last 16 pixels on the right. Test 16 moved the strip of pieces out
@@ -76,8 +77,8 @@ What the rest does is in [`../viz-test17/README.md`](../viz-test17/README.md).
   is listed at `earlier.sh`'s head, and each change is checked to have been made.
 
 The whole run, `zsh hosttests/test18/run.sh`, on 16 Nov 2026: 26 and a half minutes, ending `earlier: all passed`
-and `test 18: all passed`, with tests 13, 15, 16 and 17 each saying `all passed` inside it. On the computer only:
-nothing of test 18 has been on the board.
+and `test 18: all passed`, with tests 13, 15, 16 and 17 each saying `all passed` inside it. That run was on the computer only,
+before the build went on the board.
 
 The pictures were looked at, both looks: calibration and its settings, the status line, the strips, the card's
 pages, the effects, the pad, the FM-1's pages (Journey, SETUP, KEY, LEAD, a warning, full), a guest's pages, two
@@ -100,6 +101,7 @@ As test 8's (see test 12's README), with the ARM compiler on the path
 
 ## Not tried
 
-All of it, on the board. The build has not been loaded. Not the pages beside the brick, not a finger on the
-narrower buttons or at the brick's edge, not the hold, not either look. Each earlier README's own "not tried" list
-still stands.
+On the board (17 Nov 2026) the layout has been looked at and the hold for calibration tried, and both are
+right. Nobody has yet tried, on purpose: a finger at the brick's edge (the last 16 pixels should do nothing), each
+page in both looks, or how far a finger may drift before the hold gives up (the 20 pixels is still a guess). Each
+earlier README's own "not tried" list still stands.
