@@ -101,6 +101,21 @@ http://elm-chan.org/fsw/ff/
     The copyright owner or contributors be NOT LIABLE for any damages caused
     by use of this software.
 
+## fm1-aisling's tools/fm1_install.py (from test 19)
+
+https://github.com/stephencummins/fm1-aisling
+
+`swap.c` and `swap.h` are a port to C of that file: the update's messages, its two steps and its waits.
+
+    Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+
+    This program is free software: you can redistribute it and/or modify it under the terms of the GNU General
+    Public License as published by the Free Software Foundation, version 3.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+    (`LICENSE`) for more details.
+
 ## The C library and compiler support
 
 Built with the Arm GNU Toolchain 14.3.rel1. The binary links newlib (BSD-style licences, listed in the toolchain's

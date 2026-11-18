@@ -29,6 +29,7 @@ How it was made, the parts and a ready-built `.uf2`: https://aisling.stephen8n.c
 | `viz-test5/` | Twice as smooth (same pixels), a 144 MHz build, and the strip's piece in sync with the FM-1. |
 | `viz-test6/` | The FM-1's screen on the box, from what AISLING says to a screen reader. |
 | `viz-test7/` | Test 6, and the FM-1's four knobs turned by dragging on the box. **On the board.** |
+| `viz-test19/` | Test 18, and a firmware put on the FM-1 from the card's folder `FM1`. Checked on the Mac only. |
 | `hosttests/` | Host checks on the Mac (AddressSanitizer + UBSan): `hosttests/testN/run.sh`. |
 
 Each test's own README has what it does, what to look at, build, load and what to do if it goes wrong.
@@ -63,4 +64,5 @@ Read the log with `python3 -I log.py /dev/cu.usbmodem* 10` (keys can follow the 
 
 GPL-3.0, as AISLING. See `LICENSE`. The knob and page names in tests 6 and 7 come from AISLING's `ui.c`, which is
 mostly NACHTFAHRT's, by FartyPants (GPL-3.0-only). A built `.uf2` also contains the Raspberry Pi Pico SDK, TinyUSB and
-Pico-PIO-USB, and from test 12 ChaN's FatFs: their licences are in `NOTICES.md`.
+Pico-PIO-USB, and from test 12 ChaN's FatFs: their licences are in `NOTICES.md`. Test 19's `swap.c` is a port of
+fm1-aisling's `tools/fm1_install.py`, by Leo Kuroshita (GPL-3.0-only): also there.
