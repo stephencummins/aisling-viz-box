@@ -1,0 +1,172 @@
+== cal.c
+== card.c
+== main.c
+> #include "swap.h"     // (test 19)
+> #include "fwpage.h"
+> typedef struct {
+>     uint8_t n;
+>     uint8_t b[SWAP_MSG_MAX];
+> } swap_msg_t;
+> static queue_t swap_q;
+> static swap_col_t swap_col;                  // core 1's
+> static volatile bool swap_listen;            // an install is running: its SysEx to core 0, and nothing else sent
+> static uint8_t swap_tx[SWAP_WIRE_MAX];
+> static volatile uint32_t swap_tx_len;
+> static uint32_t swap_tx_at;                  // core 1's: how far it has got
+> static uint8_t swap_out[64] __attribute__((aligned(4)));
+> static uint16_t out_mps_c1;
+> static volatile uint32_t n_swap_dropped, n_swap_failed;
+> 
+>             int whole = swap_collect(&swap_col, p);   // (test 19) and for an install, if one listens
+>             if (whole && swap_listen) {
+>                 static swap_msg_t m;
+>                 m.n = (uint8_t)whole;
+>                 memcpy(m.b, swap_col.buf, (size_t)whole);
+>                 if (!queue_try_add(&swap_q, &m)) n_swap_dropped++;
+>             }
+>     } else if (x->user_data == 4) {   // (test 19) a piece of an install's message: the rest, or it is done
+>         if (x->result != XFER_RESULT_SUCCESS) {   // dropped: the FM-1 asks again in 5 seconds
+>             n_swap_failed++;
+>             swap_tx_at = 0;
+>             swap_tx_len = 0;
+>         } else if (swap_tx_at >= swap_tx_len) {
+>             swap_tx_at = 0;
+>             swap_tx_len = 0;
+>         }
+>                     out_mps_c1 = out_mps;   // (test 19)
+>     swap_col.in = false;   // (test 19) and what was going to it is gone
+>     swap_tx_at = 0;
+>     swap_tx_len = 0;
+<         if (out_ep && !out_busy && queue_try_remove(&to_fm1, &prog)) {
+>         if (out_ep && !out_busy && swap_tx_len) {
+>             uint32_t len = swap_tx_len, room = out_mps_c1 >= 4 && out_mps_c1 < sizeof swap_out ? out_mps_c1 & ~3u : sizeof swap_out;
+>             __dmb();   // the bytes core 0 wrote before the length
+>             tuh_xfer_t x = {
+>                 .daddr = dev_addr,
+>                 .ep_addr = out_ep,
+>                 .buflen = (uint16_t)swap_packets(swap_tx, len, &swap_tx_at, swap_out, room),
+>                 .buffer = swap_out,
+>                 .complete_cb = out_done,
+>                 .user_data = 4,
+>             };
+>             out_busy = true;
+>             if (!tuh_edpt_xfer(&x)) {
+>                 out_busy = false;
+>                 n_swap_failed++;
+>                 swap_tx_at = 0;
+>                 swap_tx_len = 0;
+>             }
+>         } else if (swap_listen) {
+>         } else if (out_ep && !out_busy && queue_try_remove(&to_fm1, &prog)) {
+>         fw_link(fm1_out, to_ms_since_boot(get_absolute_time()));     // (test 19)
+>         fw_link(false, to_ms_since_boot(get_absolute_time()));   // (test 19)
+< enum { SCR_LAND, SCR_FM1, SCR_CAL, SCR_FX, SCR_XY, SCR_CARD };   // (test 8) the effects and the pad; (12) the card
+> enum { SCR_LAND, SCR_FM1, SCR_CAL, SCR_FX, SCR_XY, SCR_CARD, SCR_FW };   // (test 8) the effects and the pad; (12) the card
+> 
+> bool fw_send(const uint8_t *wire, uint32_t n) {
+>     if (!fm1_out || swap_tx_len || n > sizeof swap_tx) return false;
+>     memcpy(swap_tx, wire, n);
+>     __dmb();
+>     swap_tx_len = n;
+>     return true;
+> }
+> 
+> static bool fw_touching, door_touching, door_on;
+> static int fw_reads, door_reads;
+> static uint32_t fw_touch_ms, door_touch_ms, door_drawn_ms;
+> 
+> static void show_fw(void) {
+>     forget_runs();
+>     cal_press_show(-1);
+>     touch_btn = -1;
+>     touching = false;
+>     knobctl_release(&kc, &fm1, 0);
+>     knobctl_reset(&kc, &fm1);
+>     pressed_cell = -1;
+>     if (screen != SCR_CARD && screen != SCR_FW) card_from = screen;   // BACK is to the card's page, and its BACK to here
+>     screen = SCR_FW;
+>     pf_shown = -1;
+>     fw_touching = false;
+>     fw_open(fm1_out, to_ms_since_boot(get_absolute_time()));
+>     fw_draw();
+>     say("screen: firmware for the FM-1 (packages in the card's folder " FW_DIR ")");
+> }
+> 
+> static void leave_fw(void) {
+>     fw_close();
+>     screen = SCR_CARD;   // so the card's page keeps the page it goes back to
+>     show_card();
+>     door_touching = false;
+>     door_drawn_ms = 0;
+> }
+> 
+> static void fw_poll(uint32_t now) {
+>     if (touch_down()) {
+>         int x, y;
+>         if (touch_screen(&x, &y)) {
+>             if (!fw_touching) fw_touching = true, fw_reads = 0;
+>             fw_reads++;
+>             fw_touch_ms = now;
+>             if (fw_reads >= 2) fw_touch(x, y);
+>             if (log_touch) say("touch x %d y %d (firmware)", x, y);
+>         }
+>     } else if (fw_touching && now - fw_touch_ms >= 60) {
+>         fw_touching = false;
+>         if (fw_lift(now) == FW_DO_BACK) leave_fw();
+>     }
+> }
+> 
+> static void door_tick(uint32_t now) {
+>     if (touch_down()) {
+>         int x, y;
+>         if (touch_screen(&x, &y)) {
+>             bool on = fw_door_at(x, y);
+>             if (!door_touching) door_touching = true, door_reads = 0, door_on = on;
+>             door_reads++;
+>             door_touch_ms = now;
+>             if (!on) door_on = false;   // dragged off it: not a tap of it
+>             if (door_reads == 2 && door_on) fw_door_draw(true);
+>         }
+>     } else if (door_touching && now - door_touch_ms >= 60) {
+>         door_touching = false;
+>         if (door_on && door_reads >= 2) {
+>             show_fw();
+>             return;
+>         }
+>         door_drawn_ms = 0;
+>     }
+>     if (now - door_drawn_ms >= 250 || !door_drawn_ms) {
+>         door_drawn_ms = now ? now : 1;
+>         fw_door_draw(door_touching && door_on && door_reads >= 2);
+>     }
+> }
+> 
+> static void fw_pass(uint32_t now) {
+>     swap_msg_t m;
+>     while (queue_try_remove(&swap_q, &m)) fw_rx(m.b, m.n, now);
+>     if (screen != SCR_FW) fw_close();   // a key took the page away
+>     fw_tick(now);
+>     swap_listen = fw_busy();
+>     for (const char *t; (t = fw_news());) say("%s", t);
+> }
+> 
+>     if (n_swap_failed || n_swap_dropped)   // (test 19)
+>         say("  firmware: %lu sends failed, %lu of the FM-1's messages dropped", (unsigned long)n_swap_failed,
+>             (unsigned long)n_swap_dropped);
+<     log_str("  c calibration screen, l landscape, o the FM-1's screen, e the effects, x the pad, u the card;");
+>     log_str("  c calibration screen, l landscape, o the FM-1's screen, e the effects, x the pad, u the card, z firmware for the FM-1;");
+>         if (fw_busy()) {   // (test 19) nothing changes page, card or FM-1 while a firmware is put on
+>             if (c != '\r' && c != '\n') say("a firmware is being put on the FM-1: the keys wait");
+>             continue;
+>         }
+>         if (screen == SCR_FW && c == 'u') {   // from the firmware page the card's is its BACK
+>             leave_fw();
+>             continue;
+>         }
+>         case 'z': show_fw(); break;     // (test 19)
+>     queue_init(&swap_q, sizeof(swap_msg_t), 8);   // (test 19)
+<         poll_touch();
+>         if (screen == SCR_FW) fw_poll(to_ms_since_boot(get_absolute_time()));   // (test 19) its own touch
+>         else poll_touch();
+>         fw_pass(to_ms_since_boot(get_absolute_time()));     // (test 19)
+>         if (screen == SCR_CARD) door_tick(to_ms_since_boot(get_absolute_time()));
