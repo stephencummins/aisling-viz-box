@@ -19,7 +19,7 @@
   a touch drops paint where it lands, a drag pulls the paint after it and leaves a swirl (`land_touch`). A tap
   still changes page and a drag still works the pad. On the board Stephen found the touch works but "swirls are
   dotty, not swirls": the trail is now laid along the whole stretch between readings, with a few wide eddies on
-  alternate sides of the path. That second try is loaded and not yet reported on.
+  alternate sides of the path. Of that second try, on the board: "the swirls look better now".
 
 Not done: test 19's host checks (`hosttests/test19`) are not carried over to this folder and were not run on it.
 What follows is test 19's page, as it was.
