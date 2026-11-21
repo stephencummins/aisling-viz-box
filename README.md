@@ -30,6 +30,7 @@ How it was made, the parts and a ready-built `.uf2`: https://aisling.stephen8n.c
 | `viz-test6/` | The FM-1's screen on the box, from what AISLING says to a screen reader. |
 | `viz-test7/` | Test 6, and the FM-1's four knobs turned by dragging on the box. **On the board.** |
 | `viz-test19/` | Test 18, and a firmware put on the FM-1 from the card's folder `FM1`. Checked on the Mac only. |
+| `viz-test20/` | Test 19 with the install made to work on an FM-1, the files' own names, MENU, quicker taps, and a landscape that answers a finger. **On the board.** |
 | `hosttests/` | Host checks on the Mac (AddressSanitizer + UBSan): `hosttests/testN/run.sh`. |
 
 Each test's own README has what it does, what to look at, build, load and what to do if it goes wrong.
