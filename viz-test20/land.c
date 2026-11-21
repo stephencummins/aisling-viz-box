@@ -540,6 +540,7 @@ void land_touch(int px, int py, bool down) {
 static void touches(void) {
     static float fx, fy, rgb[3], tx, ty;
     static int turn = 1;
+    static float run;
     int n = tq_n;
     for (int i = 0; i < n; i++) {
         float x = tq[i].x * (float)NX / LAND_W, y = tq[i].y * (float)NY / LAND_H;
@@ -559,6 +560,7 @@ static void touches(void) {
             b->held = false;   // a finger's drop opens and fades as a struck note's, whatever the band
             rgb[0] = b->rgb[0], rgb[1] = b->rgb[1], rgb[2] = b->rgb[2];
             tx = b->tx, ty = b->ty;
+            run = 0;
         } else {
             // the paint follows the finger, a little paint is left along the way, and a swirl behind it
             float dx = clampf(x - fx, -3, 3), dy = clampf(y - fy, -3, 3);
@@ -576,9 +578,25 @@ static void touches(void) {
                     v[k] += dy * g;
                 }
             }
-            vortex(x, y, 1.8f * SCALE, 0.07f * turn);
-            turn = -turn;
-            stamp(x, y, 0.8f * SCALE, rgb, 0.22f, tx, ty);
+            // (Stephen, of the first try: "swirls are dotty, not swirls". It was a dab and a small eddy at every
+            // reading.) The trail is laid along the whole stretch since the last reading, so it is a stroke; and the
+            // eddies are few and wide, one every few cells to alternate sides of the path and turning opposite ways,
+            // as a wake's are, so the stroke curls.
+            float len = sqrtf((x - fx) * (x - fx) + (y - fy) * (y - fy));
+            if (len < 20) {   // (a jump across the picture is two touches, not a stroke)
+                int steps = (int)(len / 0.4f) + 1;
+                for (int q = 1; q <= steps; q++) {
+                    float f = (float)q / steps;
+                    stamp(fx + (x - fx) * f, fy + (y - fy) * f, 1.1f * SCALE, rgb, 0.07f, tx, ty);
+                }
+                run += len;
+                if (run >= 3.5f && len > 0.01f) {
+                    run = 0;
+                    float nx = -(y - fy) / len, ny = (x - fx) / len;
+                    vortex(x + nx * 1.6f * turn, y + ny * 1.6f * turn, 2.6f, 0.16f * turn);
+                    turn = -turn;
+                }
+            }
         }
         fx = x, fy = y;
     }
