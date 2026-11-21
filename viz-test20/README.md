@@ -17,7 +17,9 @@
   now act on the press; the wait after a lift is 45 ms.
 - **The landscape answers a finger** (Stephen: "shouldn't the touch on the land page react? swirls and blooms"):
   a touch drops paint where it lands, a drag pulls the paint after it and leaves a swirl (`land_touch`). A tap
-  still changes page and a drag still works the pad. Loaded, not yet reported on.
+  still changes page and a drag still works the pad. On the board Stephen found the touch works but "swirls are
+  dotty, not swirls": the trail is now laid along the whole stretch between readings, with a few wide eddies on
+  alternate sides of the path. That second try is loaded and not yet reported on.
 
 Not done: test 19's host checks (`hosttests/test19`) are not carried over to this folder and were not run on it.
 What follows is test 19's page, as it was.
