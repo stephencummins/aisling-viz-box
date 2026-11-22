@@ -13,7 +13,7 @@ Test 25 made the paint step thirty times a second off the landscape, each step a
 box answers the Mac from the same loop, so on the card page it had about 5 ms in every 33 for the Mac's reads:
 about 100 KB a second. Up to test 24 the paint stepped ten times a second there, and the card mounted.
 
-This is the likely cause, by the timing and by what changed; it is proven only when the card mounts on the board.
+With the change below the card mounted on the board (see Checked).
 
 ## The change (main.c, HDMI build only)
 
@@ -27,4 +27,7 @@ Everything else, and how to build, load and go back, is in [test 24's README](..
 
 - On the Mac: `zsh hosttests/test26/run.sh` (only the three files changed, by the lines counted).
 - Built: `build252/viz_test26.uf2`, 418816 bytes.
-- On the board: nothing yet.
+- On the board, 2026-11-22 (the monitor's lead unplugged): it starts at 252 MHz, meets the FM-1 and finds the
+  card. **The lent card mounted on the Mac within seconds**; a file was copied to its `FM1` folder, the card was
+  ejected, and the box went back to CARD OK. Stephen then installed that file onto an FM-1 from the card.
+  Not tried: lending the card with the monitor connected.
