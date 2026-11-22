@@ -33,6 +33,8 @@ How it was made, the parts and a ready-built `.uf2`: https://aisling.stephen8n.c
 | `viz-test20/` | Test 19 with the install made to work on an FM-1, the files' own names, MENU, quicker taps, and a landscape that answers a finger. |
 | `viz-test21/` | Test 20 with the install page's percentage made the write's own, and no false "ANSWERS AS" line. |
 | `viz-test22/` | Test 21 with the card page saying MOUNT ON MAC and UNMOUNT. **On the board.** |
+| `viz-test23/` | Test 22, and in one build (`-DVIZ_HDMI=ON`, 252 MHz) a 640 x 480 test picture out of the mini-HDMI socket. Ran on the board 22 Nov 2026: the Arzopa showed it. |
+| `viz-test24/` | Test 23 with the landscape out of the HDMI socket in place of the test picture (320 x 120 points). **On the board** (22 Nov 2026). |
 | `hosttests/` | Host checks on the Mac (AddressSanitizer + UBSan): `hosttests/testN/run.sh`. |
 
 Each test's own README has what it does, what to look at, build, load and what to do if it goes wrong.
