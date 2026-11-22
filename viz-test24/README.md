@@ -3,7 +3,7 @@
 **On the board since 22 Nov 2026 (Stephen: "load it").** The log: 252 MHz, 60 frames a second sent, no lane run
 dry, 1 late line at start-up and none after; the picture's work 6293 microseconds a frame of 16667 (38% of core 0),
 23 at the longest turn; the touch screen 35 frames a second where test 23 had 55 (step 22 ms, prepare 6); the FM-1
-met and its screen read over the USB host. **The Arzopa shows the landscape** (Stephen: "I can see the visualiser!"). Its shape and speed: not yet judged. Test 23 with the landscape on the big screen in place of
+met and its screen read over the USB host. **The Arzopa shows the landscape** (Stephen: "I can see the visualiser!"). The FM-1 heard playing through the box at 252 MHz (Stephen, the same day: "sound confirmed"). Test 23 with the landscape on the big screen in place of
 the colour bars (HDMI build only, `-DVIZ_HDMI=ON -DVIZ_SYS_MHZ=252`). The touch screen, the card and the FM-1
 through the box are as they were. Without `VIZ_HDMI` the build is test 22 with its name changed.
 
@@ -39,7 +39,7 @@ in test 23. Any other key: the snapshot, which now gives the picture's work in m
 - **The longest turn must stay under a line (32 microseconds).** Counted: about 25. Over that, lines are late and
   the snapshot's "lines late" rises.
 - **RAM:** 11.2 KB between the program and the stacks where test 23 had 15.0; the queues take about 6.8.
-- Everything test 23 left untried still is, but for what it proved: the FM-1 has not been heard playing at 252 MHz.
+- The FM-1 playing through the box at 252 MHz: since heard, and confirmed.
 
 ## Checked on the Mac
 
